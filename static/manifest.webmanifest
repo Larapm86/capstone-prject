@@ -1,0 +1,17 @@
+{
+	"name": "Becom",
+	"short_name": "Becom",
+	"description": "Build a healthier relationship with food by understanding your cravings",
+	"start_url": "/",
+	"display": "standalone",
+	"theme_color": "#011F3B",
+	"background_color": "#011F3B",
+	"icons": [
+		{
+			"src": "/icon.svg",
+			"sizes": "any",
+			"type": "image/svg+xml",
+			"purpose": "any"
+		}
+	]
+}

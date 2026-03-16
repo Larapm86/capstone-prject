@@ -1,0 +1,99 @@
+/* Becom — minimal mobile-first base, dark mode */
+:root {
+	--min-touch: 44px;
+	--page-padding: 1rem;
+	--max-width: 36rem;
+	--font-sans: 'Noto Sans', system-ui, sans-serif;
+	--bg: #011F3B;
+	--text: #e8e8e8;
+	--text-muted: #8ba3b8;
+	--border: #0d3560;
+	--input-bg: #0a2d52;
+	--input-border: #13406e;
+	--error: #f87171;
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html {
+	-webkit-text-size-adjust: 100%;
+	color-scheme: dark;
+}
+
+body {
+	margin: 0;
+	min-height: 100vh;
+	padding: 0 env(safe-area-inset-right) 0 env(safe-area-inset-left);
+	font-family: var(--font-sans);
+	font-weight: 300;
+	background: var(--bg);
+	color: var(--text);
+}
+
+h1, h2, h3, h4, h5, h6 {
+	font-weight: 600;
+	color: var(--text);
+}
+
+/* Single column, centered, full-width on small screens */
+main,
+.app-page {
+	width: 100%;
+	max-width: var(--max-width);
+	margin: 0 auto;
+	padding: var(--page-padding);
+}
+
+/* Touch-friendly controls */
+button,
+a.button,
+input[type="submit"],
+input[type="button"] {
+	min-height: var(--min-touch);
+	min-width: var(--min-touch);
+	padding: 0.75rem 1.25rem;
+	background: var(--text);
+	color: var(--bg);
+	border: none;
+	border-radius: 6px;
+	font-family: var(--font-sans);
+	font-weight: 600;
+	cursor: pointer;
+}
+
+input,
+textarea {
+	font-size: 16px; /* avoids zoom on focus on iOS */
+	width: 100%;
+	max-width: 100%;
+	padding: 0.75rem;
+	background: var(--input-bg);
+	color: var(--text);
+	border: 1px solid var(--input-border);
+	border-radius: 6px;
+}
+
+input::placeholder,
+textarea::placeholder {
+	color: var(--text-muted);
+}
+
+label {
+	display: block;
+	margin-bottom: 0.25rem;
+}
+
+.form-group {
+	margin-bottom: 1rem;
+}
+
+/* App logo — responsive, consistent size */
+.logo {
+	display: block;
+	max-width: 100%;
+	height: auto;
+}

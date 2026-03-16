@@ -1,2 +1,8 @@
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation</p>
+<script lang="ts">
+	// Root only redirects; show a brief loading state in case of slow redirect
+</script>
+
+<main class="app-page">
+	<img src="/logo.svg" alt="Becom" class="logo" width="174" height="79" />
+	<p>Loading…</p>
+</main>
