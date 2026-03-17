@@ -1,31 +1,13 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { onMount } from 'svelte';
 	import { hasNewCravingForStats } from '$lib/stores/newCraving';
 	import { stars } from '$lib/starsData';
 	import type { ActionData } from './$types';
 
 	let { form }: { form: ActionData } = $props();
-	let introOpened = $state(false);
+	/** Hold button is always shown (no "Tap to open" intro). */
+	let introOpened = $state(true);
 	let introLanding = $state(false);
-
-	onMount(() => {
-		if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('becom-hold-intro-opened') === '1') {
-			introOpened = true;
-			introLanding = true;
-			const t = setTimeout(() => {
-				introLanding = false;
-			}, 6500);
-			return () => clearTimeout(t);
-		}
-	});
-
-	function openIntro() {
-		introOpened = true;
-		if (typeof sessionStorage !== 'undefined') {
-			sessionStorage.setItem('becom-hold-intro-opened', '1');
-		}
-	}
 
 	$effect(() => {
 		const active = phase === 'holding' || phase === 'complete';
@@ -45,20 +27,30 @@
 	let spreadOrigin = $state({ x: 0, y: 0 });
 	let holdIntervalId: ReturnType<typeof setInterval> | null = null;
 	let holdReleaseCleanup: (() => void) | null = null;
+	let holdStartTime = 0;
 	let showWinState = $state(false);
 	let trackFormMessage = $state<string | null>(null);
 	let hasCompletedOnce = $state(false);
 
 	function startHold(e: PointerEvent) {
 		if (phase !== 'idle') return;
+		// On mobile, prevent default touch behavior (scroll, context menu) so the hold can complete
+		if (e.pointerType === 'touch') {
+			e.preventDefault();
+		}
 		const target = e.currentTarget as HTMLElement;
 		const pointerId = e.pointerId;
-		target.setPointerCapture(pointerId);
+		try {
+			target.setPointerCapture(pointerId);
+		} catch (_) {
+			// Some mobile browsers restrict setPointerCapture; document listeners still run
+		}
 		const rect = target.getBoundingClientRect();
 		spreadOrigin = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
 		phase = 'holding';
 		holdProgress = 0;
-		const start = Date.now();
+		holdStartTime = Date.now();
+		const start = holdStartTime;
 
 		const releaseCapture = () => {
 			try {
@@ -100,6 +92,14 @@
 		if (phase === 'holding' && holdIntervalId) {
 			clearInterval(holdIntervalId);
 			holdIntervalId = null;
+			// On mobile, pointercancel often fires near the end of a long press; treat near-complete as success
+			const elapsed = Date.now() - holdStartTime;
+			if (elapsed >= 0.95 * HOLD_DURATION_MS) {
+				holdProgress = 100;
+				phase = 'complete';
+				hasCompletedOnce = true;
+				return;
+			}
 		}
 		if (phase === 'holding') {
 			phase = 'idle';
@@ -156,29 +156,6 @@
 		</defs>
 	</svg>
 	<div class="hold-intro-wrap">
-		{#if !introOpened}
-			<button
-				type="button"
-				class="intro-jar-tap-area"
-				onclick={openIntro}
-				aria-label="Tap to open and reveal Hold to log"
-			>
-				<span class="intro-jar-bubble">Tap to open</span>
-				<!-- Same shape, size and aesthetics as the Hold to log button -->
-				<span class="intro-shape-wrap" aria-hidden="true">
-					<span
-						class="intro-shape-halo flicker"
-						style="clip-path: url(#hold-button-drop)"
-						aria-hidden="true"
-					></span>
-					<span
-						class="intro-shape-body flicker"
-						style="clip-path: url(#hold-button-drop)"
-						aria-hidden="true"
-					></span>
-				</span>
-			</button>
-		{/if}
 		<div
 			class="hold-button-wrap"
 			class:holding={phase === 'holding' || phase === 'complete'}
@@ -285,7 +262,7 @@
 		<div class="white-screen-content">
 			<form
 				method="post"
-				action="?/logCraving"
+				action="/?/logCraving"
 				use:enhance={() => {
 					return async ({ result }) => {
 						if (result.type === 'success' && result.data) {
@@ -353,6 +330,10 @@
 		.hold-intro-wrap {
 			max-width: 18rem;
 			width: min(calc(100% - 2rem), 18rem);
+			margin-top: 5rem;
+		}
+		.track-below-area {
+			margin-top: -8rem;
 		}
 	}
 	.intro-jar-tap-area {
