@@ -5,11 +5,14 @@
 	import { stars } from '$lib/starsData';
 	import type { ActionData } from './$types';
 
-	/** Portal node to document.body so the white screen is never clipped or hidden by layout (fixes mobile). */
+	/** Portal node to document.body so the white screen is never clipped or hidden by layout (fixes mobile). Deferred to avoid iOS crash during mount. */
 	function portal(node: HTMLElement) {
-		document.body.appendChild(node);
+		const id = requestAnimationFrame(() => {
+			if (node.isConnected && document.body) document.body.appendChild(node);
+		});
 		return {
 			destroy() {
+				cancelAnimationFrame(id);
 				if (node.parentNode) node.parentNode.removeChild(node);
 			}
 		};
@@ -17,10 +20,12 @@
 
 	let { form }: { form: ActionData } = $props();
 
-	/** Form action for craving log – absolute URL so mobile/PWA always posts to the right route. */
-	const logCravingAction = $derived(
-		$page.url.origin + ($page.url.pathname || '/') + '?/logCraving'
-	);
+	/** Form action for craving log – absolute URL so mobile/PWA always posts to the right route. Guard for SSR/mobile. */
+	const logCravingAction = $derived.by(() => {
+		const url = $page?.url;
+		if (!url) return '/?/logCraving';
+		return (url.origin || '') + (url.pathname || '/') + '?/logCraving';
+	});
 	/** Hold button is always shown (no "Tap to open" intro). */
 	let introOpened = $state(true);
 	let introLanding = $state(false);
