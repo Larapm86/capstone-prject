@@ -20,7 +20,7 @@ export const actions: Actions = {
 		const text = formData.get('text')?.toString()?.trim() ?? '';
 		const noRedirect = formData.get('noRedirect') === '1';
 		if (!text) {
-			return fail(400, { message: 'Please enter what you’re craving.' });
+			return fail(400, { message: "Please enter what you're craving." });
 		}
 		if (text.length > MAX_CRAVING_LENGTH) {
 			return fail(400, { message: `Keep it under ${MAX_CRAVING_LENGTH} characters.` });
@@ -32,6 +32,6 @@ export const actions: Actions = {
 		if (noRedirect) {
 			return { success: true };
 		}
-		return redirect(302, '/cravings/stats');
+		return redirect(302, '/stats');
 	}
 };

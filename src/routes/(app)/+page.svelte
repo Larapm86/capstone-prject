@@ -1,9 +1,31 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { onMount } from 'svelte';
 	import { hasNewCravingForStats } from '$lib/stores/newCraving';
+	import { stars } from '$lib/starsData';
 	import type { ActionData } from './$types';
 
 	let { form }: { form: ActionData } = $props();
+	let introOpened = $state(false);
+	let introLanding = $state(false);
+
+	onMount(() => {
+		if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('becom-hold-intro-opened') === '1') {
+			introOpened = true;
+			introLanding = true;
+			const t = setTimeout(() => {
+				introLanding = false;
+			}, 6500);
+			return () => clearTimeout(t);
+		}
+	});
+
+	function openIntro() {
+		introOpened = true;
+		if (typeof sessionStorage !== 'undefined') {
+			sessionStorage.setItem('becom-hold-intro-opened', '1');
+		}
+	}
 
 	$effect(() => {
 		const active = phase === 'holding' || phase === 'complete';
@@ -17,33 +39,64 @@
 
 	const HOLD_DURATION_MS = 3200;
 	const WIN_STATE_DURATION_MS = 1600;
+	const ERROR_DISPLAY_MS = 5000;
 	let phase = $state<'idle' | 'holding' | 'complete'>('idle');
 	let holdProgress = $state(0);
 	let spreadOrigin = $state({ x: 0, y: 0 });
 	let holdIntervalId: ReturnType<typeof setInterval> | null = null;
+	let holdReleaseCleanup: (() => void) | null = null;
 	let showWinState = $state(false);
 	let trackFormMessage = $state<string | null>(null);
+	let hasCompletedOnce = $state(false);
 
 	function startHold(e: PointerEvent) {
 		if (phase !== 'idle') return;
 		const target = e.currentTarget as HTMLElement;
+		const pointerId = e.pointerId;
+		target.setPointerCapture(pointerId);
 		const rect = target.getBoundingClientRect();
 		spreadOrigin = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
 		phase = 'holding';
 		holdProgress = 0;
 		const start = Date.now();
+
+		const releaseCapture = () => {
+			try {
+				target.releasePointerCapture(pointerId);
+			} catch (_) {}
+		};
+		const onRelease = (ev: PointerEvent) => {
+			if (ev.pointerId !== pointerId) return;
+			holdReleaseCleanup?.();
+			holdReleaseCleanup = null;
+			cancelHold();
+		};
+		const cleanup = () => {
+			releaseCapture();
+			document.removeEventListener('pointerup', onRelease, true);
+			document.removeEventListener('pointercancel', onRelease, true);
+		};
+		holdReleaseCleanup = cleanup;
+		document.addEventListener('pointerup', onRelease, true);
+		document.addEventListener('pointercancel', onRelease, true);
+
 		holdIntervalId = setInterval(() => {
 			const elapsed = Date.now() - start;
 			holdProgress = Math.min(100, (elapsed / HOLD_DURATION_MS) * 100);
 			if (holdProgress >= 100) {
 				if (holdIntervalId) clearInterval(holdIntervalId);
 				holdIntervalId = null;
+				holdReleaseCleanup?.();
+				holdReleaseCleanup = null;
 				phase = 'complete';
+				hasCompletedOnce = true;
 			}
 		}, 16);
 	}
 
 	function cancelHold() {
+		holdReleaseCleanup?.();
+		holdReleaseCleanup = null;
 		if (phase === 'holding' && holdIntervalId) {
 			clearInterval(holdIntervalId);
 			holdIntervalId = null;
@@ -72,18 +125,23 @@
 			setTimeout(() => {
 				closeWhite();
 			}, WIN_STATE_DURATION_MS);
+		} else if (result.type === 'failure') {
+			setTimeout(() => {
+				closeWhite();
+			}, ERROR_DISPLAY_MS);
 		}
 	}
 </script>
 
 <svelte:head>
-	<title>Becom — Log a craving</title>
+	<title>Becom — Reflect</title>
 </svelte:head>
 
 <section
 	aria-labelledby="log-heading"
 	class="track-section"
 	class:holding={phase === 'holding' || phase === 'complete'}
+	class:returned={phase === 'idle' && hasCompletedOnce}
 	style={phase === 'holding' || phase === 'complete' ? `--hold-progress: ${phase === 'complete' ? 100 : holdProgress}` : ''}
 >
 	<h2 id="log-heading">Log a craving</h2>
@@ -97,42 +155,97 @@
 			</clipPath>
 		</defs>
 	</svg>
-	<div
-		class="hold-button-wrap"
-		class:holding={phase === 'holding' || phase === 'complete'}
-		aria-hidden="true"
-		style={phase === 'holding' || phase === 'complete' ? `--hold-progress: ${phase === 'complete' ? 100 : holdProgress}` : ''}
-	>
-		<div
-			class="hold-button-halo"
-			class:flicker={phase === 'idle'}
-			style="clip-path: url(#hold-button-drop)"
-			aria-hidden="true"
-		></div>
-		<button
-			type="button"
-			class="hold-button"
-			class:flicker={phase === 'idle'}
-			style="clip-path: url(#hold-button-drop)"
-			onpointerdown={startHold}
-			onpointerup={cancelHold}
-			onpointerleave={cancelHold}
-			onpointercancel={cancelHold}
-			aria-label={phase === 'holding' ? 'Keep holding until the tracking screen appears' : 'Hold to open tracking screen'}
-		>
-			{#key phase}
-				<span class="hold-button-label" class:holding-text={phase === 'holding'}>
-					{#if phase === 'holding'}
-						Keep holding until the tracking screen appears
-					{:else}
-						Hold to log
-					{/if}
+	<div class="hold-intro-wrap">
+		{#if !introOpened}
+			<button
+				type="button"
+				class="intro-jar-tap-area"
+				onclick={openIntro}
+				aria-label="Tap to open and reveal Hold to log"
+			>
+				<span class="intro-jar-bubble">Tap to open</span>
+				<!-- Same shape, size and aesthetics as the Hold to log button -->
+				<span class="intro-shape-wrap" aria-hidden="true">
+					<span
+						class="intro-shape-halo flicker"
+						style="clip-path: url(#hold-button-drop)"
+						aria-hidden="true"
+					></span>
+					<span
+						class="intro-shape-body flicker"
+						style="clip-path: url(#hold-button-drop)"
+						aria-hidden="true"
+					></span>
 				</span>
-			{/key}
-		</button>
+			</button>
+		{/if}
+		<div
+			class="hold-button-wrap"
+			class:holding={phase === 'holding' || phase === 'complete'}
+			class:revealed={introOpened}
+			class:landing={introLanding}
+			style={phase === 'holding' || phase === 'complete' ? `--hold-progress: ${phase === 'complete' ? 100 : holdProgress}` : ''}
+		>
+			<div
+				class="hold-button-halo"
+				class:flicker={phase === 'idle'}
+				style="clip-path: url(#hold-button-drop)"
+				aria-hidden="true"
+			></div>
+			<button
+				type="button"
+				class="hold-button"
+				class:flicker={phase === 'idle'}
+				style="clip-path: url(#hold-button-drop)"
+				onpointerdown={startHold}
+				onpointerup={cancelHold}
+				onpointerleave={cancelHold}
+				onpointercancel={cancelHold}
+				oncontextmenu={(e) => e.preventDefault()}
+				aria-label={phase === 'holding' ? 'Keep holding until the Reflect screen appears' : 'Hold to open Reflect screen'}
+			>
+				{#key phase}
+					<span class="hold-button-label" class:holding-text={phase === 'holding'}>
+						{#if phase === 'holding'}
+							Keep holding until the Reflect screen appears
+						{:else}
+							Hold to log
+						{/if}
+					</span>
+				{/key}
+			</button>
+		</div>
 	</div>
 
-	<div class="track-below-area" aria-hidden="true"></div>
+	<div class="track-below-area" aria-hidden="true">
+		<div class="track-below-grass" aria-hidden="true"></div>
+	</div>
+	<div class="reflect-stars-layer" aria-hidden="true">
+		<div class="reflect-milky"></div>
+		{#each stars as star}
+			<span
+				class="reflect-star reflect-star--s{star.s}"
+				style="left: {star.x}%; top: {star.y}%; animation-delay: {star.d}s; --brightness: {star.b};"
+			></span>
+		{/each}
+	</div>
+	<div class="horizon-glow" aria-hidden="true"></div>
+	<div class="night-silhouette" aria-hidden="true">
+		<svg class="silhouette-svg" viewBox="0 0 400 200" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+			<!-- Back: distant range, peaks pulled up a bit -->
+			<polygon points="0,200 0,132 25,145 50,120 80,132 110,112 140,125 170,105 200,118 230,102 260,114 290,98 320,110 350,94 380,104 400,100 400,200" fill="#051a12" />
+			<!-- Mid-back: ridges a bit higher -->
+			<polygon points="0,200 0,152 30,162 60,148 95,155 130,138 165,146 200,128 235,138 270,124 305,134 340,120 370,128 400,126 400,200" fill="#041510" />
+			<!-- Mid: trees pulled up -->
+			<polygon points="0,200 15,168 45,174 75,160 108,168 140,152 175,160 208,144 242,154 275,140 308,148 342,136 375,144 400,142 400,200" fill="#031812" />
+			<!-- Front: a bit higher -->
+			<polygon points="0,200 22,176 55,182 88,168 120,174 155,160 190,166 225,152 260,160 295,148 330,156 365,144 400,152 400,200" fill="#030d0a" />
+			<!-- Foreground: peaks pulled up -->
+			<polygon points="0,200 28,180 62,184 95,172 128,178 162,166 198,172 232,162 268,168 302,158 338,164 400,170 400,200" fill="#020a08" />
+			<!-- Last row: subtle, soft undulation -->
+			<polygon points="0,200 0,188 80,191 160,187 240,190 320,188 400,191 400,200" fill="#031812" fill-opacity="0.7" />
+		</svg>
+	</div>
 
 	{#if form?.message}
 		<p class="error" role="alert">{form.message}</p>
@@ -165,7 +278,7 @@
 {/if}
 
 {#if phase === 'complete'}
-	<div class="white-screen visible" role="dialog" aria-label="Tracking a craving">
+	<div class="white-screen visible" role="dialog" aria-label="Reflecting on a craving">
 		<button type="button" class="close-button" onclick={closeWhite} aria-label="Close">
 			<span class="close-icon" aria-hidden="true">×</span>
 		</button>
@@ -199,7 +312,7 @@
 				{#if trackFormMessage}
 					<p class="white-form-error" role="alert">{trackFormMessage}</p>
 				{/if}
-				<button type="submit" class="track-submit">Track it</button>
+				<button type="submit" class="track-submit">Reflect it</button>
 			</form>
 		</div>
 	</div>
@@ -221,22 +334,277 @@
 		flex: 1;
 		min-height: 100%;
 	}
+	.track-section > h2,
+	.track-section > .section-intro,
+	.track-section > .error,
+	.track-section > svg {
+		position: relative;
+		z-index: 3;
+	}
+	.hold-intro-wrap {
+		position: relative;
+		z-index: 4;
+		width: calc(100% - 2rem);
+		max-width: var(--max-width);
+		margin: 2.5rem auto 0 auto;
+		aspect-ratio: 1 / 1;
+	}
+	@media (max-width: 480px) {
+		.hold-intro-wrap {
+			max-width: 18rem;
+			width: min(calc(100% - 2rem), 18rem);
+		}
+	}
+	.intro-jar-tap-area {
+		position: absolute;
+		inset: 0;
+		z-index: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		cursor: pointer;
+		background: transparent;
+		border: none;
+		padding: 0;
+		appearance: none;
+		-webkit-appearance: none;
+		color: inherit;
+		outline: none;
+	}
+	.intro-jar-tap-area:focus-visible {
+		outline: 2px solid rgba(180, 220, 255, 0.9);
+		outline-offset: 4px;
+	}
+	/* No shrink on tap – keep same size as production */
+	.intro-jar-bubble {
+		position: relative;
+		padding: 0.5rem 0.85rem;
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: rgba(255, 252, 245, 0.95);
+		text-shadow: 0 0 12px rgba(150, 210, 230, 0.35);
+		background: linear-gradient(180deg, rgba(1, 26, 40, 0.92) 0%, rgba(1, 20, 35, 0.95) 100%);
+		border: none;
+		border-radius: 0.5rem;
+		box-shadow: 0 2px 16px rgba(0, 0, 0, 0.4), 0 0 20px rgba(80, 160, 180, 0.08);
+		white-space: nowrap;
+	}
+	.intro-jar-bubble::after {
+		content: '';
+		position: absolute;
+		left: 50%;
+		top: 100%;
+		transform: translateX(-50%);
+		border: 6px solid transparent;
+		border-top-color: rgba(1, 22, 38, 0.95);
+	}
+	/* Intro: same shape, size and aesthetics as Hold to log button */
+	.intro-shape-wrap {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+	}
+	.intro-shape-halo {
+		position: absolute;
+		inset: 0;
+		background: rgba(255, 255, 255, 0.02);
+		border-radius: 50%;
+		filter: drop-shadow(6px -6px 16px rgba(220, 235, 255, 0.7))
+			drop-shadow(6px -6px 1.5rem rgba(220, 235, 255, 0.65))
+			drop-shadow(6px -6px 3.5rem rgba(200, 220, 245, 0.5))
+			drop-shadow(6px -6px 5.5rem rgba(180, 205, 235, 0.35));
+	}
+	.intro-shape-body {
+		position: absolute;
+		inset: 0;
+		border-radius: 50%;
+		background: radial-gradient(
+			ellipse 70% 55% at 28% 22%,
+			rgba(255, 255, 255, 1),
+			rgba(235, 242, 252, 0.95) 35%,
+			rgba(195, 210, 230, 0.98) 70%,
+			rgba(175, 190, 212, 1) 100%
+		);
+		box-shadow:
+			inset -0.6rem -0.6rem 2rem rgba(150, 170, 200, 0.35),
+			inset 0.5rem 0.45rem 1.25rem rgba(255, 255, 255, 0.85),
+			inset 0.15rem 0.15rem 0.5rem rgba(255, 255, 255, 0.9);
+	}
+	.intro-shape-body.flicker::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border-radius: 50%;
+		background: radial-gradient(
+			ellipse 55% 45% at 50% 50%,
+			rgba(255, 255, 255, 0.22),
+			rgba(255, 255, 255, 0.05) 45%,
+			transparent 70%
+		);
+		animation: light-drift 8s ease-in-out infinite;
+		pointer-events: none;
+	}
+	/* Wrap hidden until intro opened; when shown, never scale so button stays same size on tap */
+	.hold-intro-wrap .hold-button-wrap {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+		opacity: 0;
+		overflow: visible;
+		transform: scale(1);
+		transition: opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+		transition-property: opacity;
+	}
+	.hold-intro-wrap .hold-button-wrap.revealed {
+		pointer-events: auto;
+		opacity: 1;
+		transform: scale(1);
+	}
 	.track-below-area {
+		position: relative;
 		flex: 1;
-		min-height: 40vh;
+		min-height: 18vh;
 		margin: 0 calc(50% - 50vw);
-		margin-top: -8rem;
+		margin-top: -10rem;
 		width: 100vw;
-		background: #051D26;
-		/* Stays behind the floating nav (nav is z-index 100) */
-		z-index: 0;
+		z-index: 1;
+		pointer-events: none;
+		overflow: hidden;
+		/* Jagged treeline at top instead of straight edge */
+		clip-path: polygon(
+			0% 100%, 0% 58%, 5% 52%, 10% 56%, 15% 50%, 20% 54%, 25% 49%, 30% 53%, 35% 48%,
+			40% 52%, 45% 47%, 50% 51%, 55% 49%, 60% 53%, 65% 48%, 70% 52%, 75% 50%, 80% 54%,
+			85% 49%, 90% 53%, 95% 51%, 100% 55%, 100% 100%
+		);
+		/* Depth: darker at bottom, slight variation toward horizon */
+		background: linear-gradient(
+			to top,
+			#031a20 0%,
+			#041e24 22%,
+			#052228 45%,
+			#051D26 70%,
+			#041b22 100%
+		);
+	}
+	.track-below-grass {
+		position: absolute;
+		inset: 0;
+		/* Grass: blades + extra angle for clumps/depth, stronger toward bottom */
+		background-image:
+			linear-gradient(to top, transparent 0%, transparent 35%, rgba(0, 30, 28, 0.15) 100%),
+			repeating-linear-gradient(
+				88deg,
+				transparent 0,
+				transparent 2px,
+				rgba(0, 48, 46, 0.32) 2px,
+				rgba(0, 48, 46, 0.32) 3px
+			),
+			repeating-linear-gradient(
+				92deg,
+				transparent 0,
+				transparent 3px,
+				rgba(0, 44, 42, 0.22) 3px,
+				rgba(0, 44, 42, 0.22) 4px
+			),
+			repeating-linear-gradient(
+				90deg,
+				transparent 0,
+				transparent 4px,
+				rgba(0, 40, 38, 0.14) 4px,
+				rgba(0, 40, 38, 0.14) 5px
+			),
+			repeating-linear-gradient(
+				86deg,
+				transparent 0,
+				transparent 5px,
+				rgba(0, 42, 40, 0.1) 5px,
+				rgba(0, 42, 40, 0.1) 6px
+			);
+	}
+	.reflect-stars-layer {
+		position: fixed;
+		inset: 0;
+		z-index: 1;
+		pointer-events: none;
+		overflow: hidden;
+	}
+	.reflect-milky {
+		position: absolute;
+		inset: 0;
+		background: radial-gradient(
+			ellipse 120% 40% at 55% 25%,
+			rgba(255, 255, 255, 0.035) 0%,
+			rgba(255, 255, 255, 0.012) 40%,
+			transparent 70%
+		);
+	}
+	.reflect-star {
+		position: absolute;
+		border-radius: 50%;
+		background: rgba(255, 255, 255, 0.95);
+		opacity: var(--brightness, 0.9);
+		animation: reflect-star-blink 3s ease-in-out infinite;
+	}
+	.reflect-star--s1 {
+		width: 1px;
+		height: 1px;
+	}
+	.reflect-star--s2 {
+		width: 2px;
+		height: 2px;
+	}
+	.reflect-star--s3 {
+		width: 3px;
+		height: 3px;
+	}
+	@keyframes reflect-star-blink {
+		0%, 100% { opacity: calc(var(--brightness, 0.9) * 0.3); transform: scale(1); }
+		50% { opacity: var(--brightness, 0.9); transform: scale(1.15); }
+	}
+	.horizon-glow {
+		position: fixed;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		height: 50vh;
+		z-index: 1;
+		pointer-events: none;
+		background: linear-gradient(
+			to top,
+			rgba(0, 55, 60, 0.55) 0%,
+			rgba(0, 70, 72, 0.25) 30%,
+			rgba(0, 50, 55, 0.08) 55%,
+			transparent 85%
+		);
+	}
+	.night-silhouette {
+		position: fixed;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		height: 36vh;
+		min-height: 130px;
+		z-index: 2;
+		pointer-events: none;
+		background: #041210;
+	}
+	.silhouette-svg {
+		width: 100%;
+		height: 100%;
+		display: block;
+		object-fit: cover;
+		object-position: bottom center;
 	}
 	.track-section.holding {
 		z-index: 202;
 	}
-	/* Dark area blends into white in sync with the button */
-	.track-section.holding .track-below-area {
-		opacity: clamp(0, (75 - var(--hold-progress, 0)) / 60, 1);
+	/* Dark area and green bottom fade in sync with the button (blend earlier) */
+	.track-section.holding .track-below-area,
+	.track-section.holding .horizon-glow,
+	.track-section.holding .night-silhouette {
+		opacity: clamp(0, (50 - var(--hold-progress, 0)) / 45, 1);
 		transition: opacity 0.28s ease-out;
 	}
 	.track-section.holding h2,
@@ -256,22 +624,17 @@
 		margin: 0 0 1.5rem 0;
 		color: var(--text-muted);
 	}
-	.hold-button-wrap {
-		position: relative;
-		width: calc(100% - 2rem);
-		max-width: var(--max-width);
-		aspect-ratio: 1 / 1;
-		margin: 2.5rem auto 0 0;
-		/* Don’t clip so the halo layer’s drop-shadow can extend outside */
-		overflow: visible;
-	}
+	/* Keep same size when holding: do NOT override position (was position: relative and made wrap shrink) */
 	.hold-button-wrap.holding {
 		z-index: 201;
-		position: relative;
+		position: absolute;
+		inset: 0;
+		transform: scale(1);
 	}
-	/* Blend button into white earlier and smoothly (fade starts ~15%, done by ~75%) */
+	/* Fade button and halo into the white spread for a smooth, elegant transition */
 	.hold-button-wrap.holding .hold-button-halo,
-	.hold-button-wrap.holding .hold-button {
+	.hold-button-wrap.holding .hold-button,
+	.hold-button-wrap.holding .hold-button-label {
 		opacity: clamp(0, (75 - var(--hold-progress, 0)) / 60, 1);
 		transition: opacity 0.28s ease-out;
 	}
@@ -283,6 +646,10 @@
 	}
 	.hold-button-wrap.holding .hold-button-label {
 		animation: none;
+	}
+	.track-section.returned .hold-button-label {
+		animation: none;
+		opacity: 1;
 	}
 	@keyframes hold-label-fade-in {
 		from { opacity: 0; }
@@ -349,6 +716,7 @@
 		height: 100%;
 		padding: 1.5rem;
 		font-size: 1.125rem;
+		transform: scale(1);
 		background: radial-gradient(
 			ellipse 70% 55% at 28% 22%,
 			rgba(255, 255, 255, 1),
@@ -370,8 +738,10 @@
 		touch-action: none;
 		-webkit-tap-highlight-color: transparent;
 	}
+	/* Same size before and after tap – no shrink, no dim */
 	.hold-button:active {
-		opacity: 0.95;
+		transform: scale(1);
+		opacity: 1;
 	}
 	.error {
 		color: var(--error);

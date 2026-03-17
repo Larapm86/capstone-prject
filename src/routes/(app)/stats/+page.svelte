@@ -16,13 +16,13 @@
 </script>
 
 <svelte:head>
-	<title>Becom — My cravings</title>
+	<title>Becom — Insights</title>
 </svelte:head>
 
-<section aria-labelledby="stats-heading">
-	<h2 id="stats-heading">Your cravings</h2>
+<section aria-labelledby="insights-heading">
+	<h2 id="insights-heading">Your cravings</h2>
 	{#if data.cravings.length === 0}
-		<p class="empty">No cravings logged yet. Switch to Track to add one when you feel a craving.</p>
+		<p class="empty">No cravings logged yet. Switch to Reflect to add one when you feel a craving.</p>
 	{:else}
 		<ul class="cravings-list">
 			{#each data.cravings as c (c.id)}
