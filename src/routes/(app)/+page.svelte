@@ -36,6 +36,8 @@
 	});
 
 	const HOLD_DURATION_MS = 3200;
+	/** Mobile: tap triggers white spread from button to full screen over this duration, then goto /craving */
+	const TAP_SPREAD_MS = 1000;
 	const WIN_STATE_DURATION_MS = 1600;
 	const ERROR_DISPLAY_MS = 5000;
 	let phase = $state<'idle' | 'holding' | 'complete'>('idle');
@@ -66,8 +68,35 @@
 		const isTouch = e.pointerType === 'touch';
 		if (isTouch) {
 			e.preventDefault();
-			// Mobile: tap goes straight to /craving (its own route, no fill animation).
-			goto('/craving');
+			// Mobile: white spread grows from button to full screen, then navigate to /craving
+			const target = e.currentTarget as HTMLElement;
+			const rect = target.getBoundingClientRect();
+			spreadOrigin = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+			phase = 'holding';
+			holdProgress = 0;
+			const start = Date.now();
+
+			holdIntervalId = setInterval(() => {
+				const elapsed = Date.now() - start;
+				holdProgress = Math.min(100, (elapsed / TAP_SPREAD_MS) * 100);
+				if (holdProgress >= 100) {
+					if (holdIntervalId) clearInterval(holdIntervalId);
+					holdIntervalId = null;
+					if (holdCompleteTimeoutId) clearTimeout(holdCompleteTimeoutId);
+					holdCompleteTimeoutId = null;
+					goto('/craving');
+				}
+			}, 16);
+
+			holdCompleteTimeoutId = setTimeout(() => {
+				if (phase === 'holding') {
+					holdProgress = 100;
+					if (holdIntervalId) clearInterval(holdIntervalId);
+					holdIntervalId = null;
+					holdCompleteTimeoutId = null;
+					goto('/craving');
+				}
+			}, TAP_SPREAD_MS + 80);
 			return;
 		}
 
@@ -789,6 +818,12 @@
 		transition: transform 0.12s ease-out, opacity 0.12s ease-out;
 		z-index: 199;
 		pointer-events: none;
+	}
+	@media (max-width: 768px) {
+		.light-spread,
+		.white-spread {
+			transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+		}
 	}
 	.light-spread.complete {
 		transform: scale(1);
