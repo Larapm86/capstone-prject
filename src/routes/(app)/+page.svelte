@@ -31,7 +31,7 @@
 	let phase = $state<'idle' | 'holding' | 'complete'>('idle');
 	let holdProgress = $state(0);
 	let spreadOrigin = $state({ x: 0, y: 0 });
-	let holdIntervalId: ReturnType<typeof setInterval> | null = null;
+	let holdRafId: number | null = null;
 	let holdReleaseCleanup: (() => void) | null = null;
 	let holdStartTime = 0;
 	let showWinState = $state(false);
@@ -78,26 +78,28 @@
 		document.addEventListener('pointerup', onRelease, true);
 		document.addEventListener('pointercancel', onRelease, true);
 
-		holdIntervalId = setInterval(() => {
+		const tick = () => {
 			const elapsed = Date.now() - start;
 			holdProgress = Math.min(100, (elapsed / HOLD_DURATION_MS) * 100);
 			if (holdProgress >= 100) {
-				if (holdIntervalId) clearInterval(holdIntervalId);
-				holdIntervalId = null;
+				holdRafId = null;
 				holdReleaseCleanup?.();
 				holdReleaseCleanup = null;
 				phase = 'complete';
 				hasCompletedOnce = true;
+			} else {
+				holdRafId = requestAnimationFrame(tick);
 			}
-		}, 16);
+		};
+		holdRafId = requestAnimationFrame(tick);
 	}
 
 	function cancelHold() {
 		holdReleaseCleanup?.();
 		holdReleaseCleanup = null;
-		if (phase === 'holding' && holdIntervalId) {
-			clearInterval(holdIntervalId);
-			holdIntervalId = null;
+		if (phase === 'holding' && holdRafId !== null) {
+			cancelAnimationFrame(holdRafId);
+			holdRafId = null;
 			// On mobile, pointercancel often fires near the end of a long press; treat near-complete as success
 			const elapsed = Date.now() - holdStartTime;
 			if (elapsed >= 0.95 * HOLD_DURATION_MS) {
@@ -602,6 +604,18 @@
 		pointer-events: none;
 		transition: opacity 0.2s ease-out, visibility 0.2s ease-out;
 	}
+	@media (max-width: 768px) {
+		.track-section.holding .track-below-area,
+		.track-section.holding .horizon-glow,
+		.track-section.holding .night-silhouette {
+			transition: opacity 0.4s ease-out;
+		}
+		.track-section.holding h2,
+		.track-section.holding .section-intro,
+		.track-section.holding .error {
+			transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
+		}
+	}
 	h2 {
 		font-size: 1rem;
 		font-weight: 600;
@@ -624,6 +638,13 @@
 	.hold-button-wrap.holding .hold-button-label {
 		opacity: clamp(0, (75 - var(--hold-progress, 0)) / 60, 1);
 		transition: opacity 0.28s ease-out;
+	}
+	@media (max-width: 768px) {
+		.hold-button-wrap.holding .hold-button-halo,
+		.hold-button-wrap.holding .hold-button,
+		.hold-button-wrap.holding .hold-button-label {
+			transition: opacity 0.4s ease-out;
+		}
 	}
 	.hold-button-label {
 		animation: hold-label-fade-in 0.4s ease-out forwards;
@@ -752,15 +773,17 @@
 			transparent 100%
 		);
 		border-radius: 50%;
-		transform: scale(calc(var(--progress) / 100));
+		transform: scale(calc(var(--progress) / 100)) translateZ(0);
 		opacity: calc(var(--progress) / 100);
-		transition: transform 0.15s ease-out, opacity 0.15s ease-out;
+		will-change: transform, opacity;
 		z-index: 199;
 		pointer-events: none;
+		/* No transition during hold – progress drives animation for smooth mobile */
 	}
 	.light-spread.complete {
-		transform: scale(1);
+		transform: scale(1) translateZ(0);
 		opacity: 1;
+		transition: transform 0.2s ease-out, opacity 0.2s ease-out;
 	}
 	.white-spread {
 		position: fixed;
@@ -772,16 +795,17 @@
 		margin-top: -100vmax;
 		background: #fff;
 		border-radius: 50%;
-		transform: scale(calc(var(--progress) / 100));
+		transform: scale(calc(var(--progress) / 100)) translateZ(0);
 		opacity: calc(var(--progress) / 100);
-		transition: transform 0.15s ease-out, opacity 0.15s ease-out;
+		will-change: transform, opacity;
 		z-index: 200;
 		pointer-events: none;
+		/* No transition during hold – progress drives animation for smooth mobile */
 	}
 	.white-spread.complete {
-		transform: scale(1);
+		transform: scale(1) translateZ(0);
 		opacity: 1;
-		transition: transform 0.2s ease-out, opacity 0.25s ease-out;
+		transition: transform 0.25s ease-out, opacity 0.3s ease-out;
 		pointer-events: none;
 	}
 	.white-screen {
