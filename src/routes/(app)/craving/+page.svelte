@@ -33,7 +33,7 @@
 	<title>Becom — Log a craving</title>
 </svelte:head>
 
-<div class="craving-page">
+<div class="craving-page craving-page--enter">
 	<a href="/" class="close-link" aria-label="Back to Reflect">×</a>
 	<div class="craving-content">
 		<form
@@ -90,6 +90,43 @@
 		padding-right: calc(1rem + env(safe-area-inset-right, 0px));
 		padding-left: calc(1rem + env(safe-area-inset-left, 0px));
 		padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+	}
+	/* Smooth entrance on mobile */
+	.craving-page--enter {
+		animation: craving-page-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+	}
+	@keyframes craving-page-in {
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
+	}
+	.craving-page--enter .close-link {
+		animation: craving-item-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+	}
+	.craving-page--enter .craving-label {
+		animation: craving-item-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.14s both;
+	}
+	.craving-page--enter .craving-input {
+		animation: craving-item-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.22s both;
+	}
+	.craving-page--enter .craving-error {
+		animation: craving-item-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.26s both;
+	}
+	.craving-page--enter .craving-submit {
+		animation: craving-item-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
+	}
+	@keyframes craving-item-in {
+		from {
+			opacity: 0;
+			transform: translateY(0.5rem);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
 	}
 	.close-link {
 		position: absolute;
