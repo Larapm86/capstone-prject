@@ -6,9 +6,9 @@
 
 <svelte:head>
 	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-	<!-- Match top of star-sky gradient so status bar blends (status bar can only be one color, not the star pattern) -->
-	<meta name="theme-color" content="#010810" media="(prefers-color-scheme: dark)" />
-	<meta name="theme-color" content="#010810" />
+	<!-- Darker blue from app background so status bar matches star-sky area -->
+	<meta name="theme-color" content="#000810" media="(prefers-color-scheme: dark)" />
+	<meta name="theme-color" content="#000810" />
 	<meta name="apple-mobile-web-app-capable" content="yes" />
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 	<meta name="apple-mobile-web-app-title" content="Becom" />
