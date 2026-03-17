@@ -1,10 +1,16 @@
 <script lang="ts">
+	import { page } from '$app/stores';
 	import { enhance } from '$app/forms';
 	import { hasNewCravingForStats } from '$lib/stores/newCraving';
 	import { stars } from '$lib/starsData';
 	import type { ActionData } from './$types';
 
 	let { form }: { form: ActionData } = $props();
+
+	/** Form action for craving log – absolute URL so mobile/PWA always posts to the right route. */
+	const logCravingAction = $derived(
+		$page.url.origin + ($page.url.pathname || '/') + '?/logCraving'
+	);
 	/** Hold button is always shown (no "Tap to open" intro). */
 	let introOpened = $state(true);
 	let introLanding = $state(false);
@@ -262,7 +268,7 @@
 		<div class="white-screen-content">
 			<form
 				method="post"
-				action="/?/logCraving"
+				action={logCravingAction}
 				use:enhance={() => {
 					return async ({ result }) => {
 						if (result.type === 'success' && result.data) {
