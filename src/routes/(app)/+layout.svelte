@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { fade } from 'svelte/transition';
 	import { page } from '$app/stores';
 	import { hasNewCravingForStats } from '$lib/stores/newCraving';
 	import { stars } from '$lib/starsData';
@@ -43,9 +44,9 @@
 	});
 
 	const navItems = [
-		{ href: '/', label: 'Reflect', path: '/' },
-		{ href: '/stats', label: 'Insights', path: '/stats', showNewBadge: true },
-		{ href: '/settings', label: 'Settings', path: '/settings' }
+		{ href: '/', label: 'Reflect', path: '/', icon: 'reflect' },
+		{ href: '/stats', label: 'Insights', path: '/stats', showNewBadge: true, icon: 'insights' },
+		{ href: '/settings', label: 'Me', path: '/settings', icon: 'me' }
 	];
 </script>
 
@@ -63,11 +64,14 @@
 		<div class="shooting-star" class:run={shootingStarRun} aria-hidden="true">
 			<span class="shooting-star-streak"></span>
 		</div>
-		<img src="/logo.svg" alt="Becom" class="logo" width="174" height="79" />
 	{/if}
 
 	<main class="app-page screen-content">
-		{@render children()}
+		{#key $page.url.pathname}
+			<div class="page-transition-wrap" in:fade={{ duration: 220 }} out:fade={{ duration: 160 }}>
+				{@render children()}
+			</div>
+		{/key}
 	</main>
 
 	{#if $page.url.pathname !== '/craving'}
@@ -79,6 +83,15 @@
 				class:active={$page.url.pathname === item.path}
 				aria-label={item.showNewBadge && $hasNewCravingForStats ? `${item.label} — new craving logged` : item.label}
 			>
+				<span class="nav-icon" aria-hidden="true" style="opacity: {$page.url.pathname === item.path ? 1 : 0.55};">
+					<img
+						src="/icons/nav/icon_{item.icon}_{$page.url.pathname === item.path ? 'selected' : 'unselected'}.svg"
+						alt=""
+						width="32"
+						height="32"
+						class="nav-icon-img"
+					/>
+				</span>
 				<span class="nav-label">{item.label}</span>
 				{#if item.showNewBadge && $hasNewCravingForStats}
 					<span class="nav-badge" aria-hidden="true"></span>
@@ -90,8 +103,7 @@
 </div>
 
 <style>
-	:global(body.hold-active) .bottom-nav,
-	:global(body.hold-active) .logo {
+	:global(body.hold-active) .bottom-nav {
 		opacity: 0;
 		visibility: hidden;
 		pointer-events: none;
@@ -249,11 +261,17 @@
 		box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
 		z-index: 100;
 	}
+	.page-transition-wrap {
+		width: 100%;
+		min-height: 0;
+	}
 	.nav-item {
 		flex: 1;
 		display: flex;
+		flex-direction: column;
 		align-items: center;
 		justify-content: center;
+		gap: 0;
 		min-height: var(--min-touch);
 		padding: 0.5rem 0.25rem;
 		color: rgba(255, 255, 255, 0.55);
@@ -261,7 +279,23 @@
 		font-weight: 500;
 		font-size: 0.9375rem;
 		border-radius: 0.5rem;
-		transition: color 0.2s ease;
+		transition: color 0.32s ease-out, font-weight 0.28s ease-out, transform 0.25s ease-out;
+	}
+	.nav-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		line-height: 0;
+		transition: opacity 0.32s ease-out, transform 0.28s ease-out;
+	}
+	.nav-item.active .nav-icon {
+		transform: scale(1.04);
+	}
+	.nav-icon-img {
+		display: block;
+		width: 32px;
+		height: 32px;
+		flex-shrink: 0;
 	}
 	.nav-item:hover {
 		color: rgba(255, 255, 255, 0.85);

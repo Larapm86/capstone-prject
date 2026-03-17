@@ -3,18 +3,18 @@
 </script>
 
 <svelte:head>
-	<title>Becom — Settings</title>
+	<title>Becom — Me</title>
 </svelte:head>
 
 <section aria-labelledby="settings-heading">
-	<h2 id="settings-heading">Settings</h2>
+	<h2 id="settings-heading" class="page-title">Me</h2>
 	<form method="post" action="?/signOut" use:enhance class="sign-out-form">
 		<button type="submit">Sign out</button>
 	</form>
 </section>
 
 <style>
-	h2 {
+	h2:not(.page-title) {
 		font-size: 1rem;
 		font-weight: 600;
 		margin: 0 0 1rem 0;

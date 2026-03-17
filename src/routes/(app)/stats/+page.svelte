@@ -20,7 +20,7 @@
 </svelte:head>
 
 <section aria-labelledby="insights-heading">
-	<h2 id="insights-heading">Your cravings</h2>
+	<h2 id="insights-heading" class="page-title">Your cravings</h2>
 	{#if data.cravings.length === 0}
 		<p class="empty">No cravings logged yet. Switch to Reflect to add one when you feel a craving.</p>
 	{:else}
@@ -43,7 +43,7 @@
 </section>
 
 <style>
-	h2 {
+	h2:not(.page-title) {
 		font-size: 1rem;
 		font-weight: 600;
 		margin: 0 0 0.5rem 0;

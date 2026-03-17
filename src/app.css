@@ -4,7 +4,7 @@
 	--page-padding: 1rem;
 	--max-width: 36rem;
 	--font-sans: 'Noto Sans', system-ui, sans-serif;
-	--bg: #011F3B;
+	--bg: #010810;
 	--text: #e8e8e8;
 	--text-muted: #8ba3b8;
 	--border: #0d3560;
@@ -42,6 +42,16 @@ body {
 
 h1, h2, h3, h4, h5, h6 {
 	font-weight: 600;
+	color: var(--text);
+}
+
+/* Page/screen title – Welcome, Your cravings, Settings */
+.page-title {
+	font-size: 1.5rem;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	margin: 0 0 1rem 0;
+	padding-top: calc(4rem + env(safe-area-inset-top, 0px));
 	color: var(--text);
 }
 

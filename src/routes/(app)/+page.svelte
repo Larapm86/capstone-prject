@@ -213,11 +213,11 @@
 	class:returned={phase === 'idle' && hasCompletedOnce}
 	style={phase === 'holding' || phase === 'complete' ? `--hold-progress: ${phase === 'complete' ? 100 : holdProgress}` : ''}
 >
-	<h2 id="log-heading">Log a craving</h2>
+	<h2 id="log-heading" class="page-title">Welcome</h2>
 	<p class="section-intro">
-		{isTouchDevice ? 'Tap the button — the screen will fill and then you can log.' : 'Hold the button until the screen fills — then you’re in.'}
+		This is your space. When you're ready, tap and hold. This pause is already your first step.
 	</p>
-	<svg width="0" height="0" aria-hidden="true" focusable="false">
+	<svg aria-hidden="true" focusable="false" style="position: absolute; width: 0; height: 0; overflow: hidden;">
 		<defs>
 			<clipPath id="hold-button-drop" clipPathUnits="objectBoundingBox">
 				<!-- Top 3/4 of circle: arc over the top, flat chord at bottom (y=0.75) -->
@@ -391,15 +391,15 @@
 		position: relative;
 		z-index: 4;
 		width: calc(100% - 2rem);
-		max-width: var(--max-width);
-		margin: 2.5rem auto 0 auto;
+		max-width: 22rem;
+		margin: 9rem auto 0 auto;
 		aspect-ratio: 1 / 1;
 	}
 	@media (max-width: 480px) {
 		.hold-intro-wrap {
-			max-width: 14rem;
-			width: min(calc(100% - 2rem), 14rem);
-			margin-top: 5rem;
+			max-width: 13rem;
+			width: min(calc(100% - 2rem), 13rem);
+			margin-top: 11rem;
 		}
 		.track-below-area {
 			margin-top: -8rem;
@@ -656,7 +656,7 @@
 		pointer-events: none;
 		transition: opacity 0.2s ease-out, visibility 0.2s ease-out;
 	}
-	h2 {
+	h2:not(.page-title) {
 		font-size: 1rem;
 		font-weight: 600;
 		margin: 0 0 0.5rem 0;
@@ -699,14 +699,13 @@
 	.hold-button-halo {
 		position: absolute;
 		inset: 0;
-		/* Same 3/4 shape; needs a fill so drop-shadow has something to cast from */
-		background: rgba(255, 255, 255, 0.02);
-		border-radius: 50%;
-		/* Halo – this layer isn’t clipped by parent so shadow is visible */
-		filter: drop-shadow(6px -6px 16px rgba(220, 235, 255, 0.7))
-			drop-shadow(6px -6px 1.5rem rgba(220, 235, 255, 0.65))
-			drop-shadow(6px -6px 3.5rem rgba(200, 220, 245, 0.5))
-			drop-shadow(6px -6px 5.5rem rgba(180, 205, 235, 0.35));
+		/* Same 3/4 shape from clip-path; no border-radius so dome shows */
+		background: rgba(235, 242, 255, 0.05);
+		border-radius: 0;
+		filter: drop-shadow(0 0 16px rgba(220, 235, 255, 0.5))
+			drop-shadow(0 0 36px rgba(210, 228, 255, 0.35))
+			drop-shadow(0 0 56px rgba(200, 220, 255, 0.22))
+			drop-shadow(0 0 80px rgba(190, 212, 255, 0.12));
 		pointer-events: none;
 	}
 	.hold-button-halo.flicker {
@@ -715,18 +714,46 @@
 	.hold-button.flicker {
 		animation: fluorescent-flicker 4.5s ease-in-out infinite;
 	}
+	/* Glossy: soft specular + streak + rim – transparent so sky shows through */
+	.hold-button::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border-radius: 0;
+		background:
+			radial-gradient(
+				ellipse 70% 45% at 22% 14%,
+				rgba(255, 255, 255, 0.65) 0%,
+				rgba(255, 255, 255, 0.45) 20%,
+				rgba(248, 252, 255, 0.2) 45%,
+				transparent 65%
+			),
+			linear-gradient(
+				135deg,
+				rgba(255, 255, 255, 0.22) 0%,
+				transparent 25%
+			),
+			radial-gradient(
+				ellipse 120% 60% at 50% -10%,
+				rgba(255, 255, 255, 0.12) 0%,
+				transparent 50%
+			);
+		pointer-events: none;
+	}
+	/* Moving light inside – visible but translucent */
 	.hold-button.flicker::before {
 		content: '';
 		position: absolute;
 		inset: 0;
 		border-radius: 50%;
 		background: radial-gradient(
-			ellipse 55% 45% at 50% 50%,
-			rgba(255, 255, 255, 0.22),
-			rgba(255, 255, 255, 0.05) 45%,
-			transparent 70%
+			ellipse 75% 65% at 50% 50%,
+			rgba(255, 255, 255, 0.5) 0%,
+			rgba(248, 252, 255, 0.28) 35%,
+			rgba(235, 245, 255, 0.1) 60%,
+			transparent 85%
 		);
-		animation: light-drift 8s ease-in-out infinite;
+		animation: light-drift 12s ease-in-out infinite;
 		pointer-events: none;
 	}
 	@keyframes fluorescent-flicker {
@@ -741,11 +768,11 @@
 		88% { opacity: 0.98; }
 	}
 	@keyframes light-drift {
-		/* Soft highlight drifting inside – very subtle */
-		0%, 100% { transform: translate(-3%, -4%); opacity: 0.88; }
-		30% { transform: translate(4%, 2%); opacity: 1; }
-		55% { transform: translate(-2%, 4%); opacity: 0.9; }
-		80% { transform: translate(2%, -3%); opacity: 0.92; }
+		/* Lights moving inside – very obvious motion */
+		0%, 100% { transform: translate(-14%, -10%) scale(1.12); opacity: 1; }
+		25% { transform: translate(12%, -8%) scale(0.95); opacity: 0.9; }
+		50% { transform: translate(10%, 14%) scale(1.15); opacity: 1; }
+		75% { transform: translate(-10%, 10%) scale(0.92); opacity: 0.95; }
 	}
 	.hold-button {
 		position: absolute;
@@ -758,20 +785,26 @@
 		padding: 1.5rem;
 		font-size: 1.125rem;
 		transform: scale(1);
+		/* Shape is 3/4 dome from clip-path only – no border-radius so we don’t show a full circle */
+		border-radius: 0;
+		/* Ethereal orb: pale blue-white, more transparent so sky shows through */
 		background: radial-gradient(
 			ellipse 70% 55% at 28% 22%,
-			rgba(255, 255, 255, 1),
-			rgba(235, 242, 252, 0.95) 35%,
-			rgba(195, 210, 230, 0.98) 70%,
-			rgba(175, 190, 212, 1) 100%
+			rgba(248, 252, 255, 0.62),
+			rgba(238, 245, 255, 0.55) 35%,
+			rgba(228, 238, 252, 0.48) 70%,
+			rgba(218, 232, 250, 0.42) 100%
 		);
-		color: var(--bg);
+		color: #0a0c14;
 		border: none;
-		border-radius: 50%;
 		box-shadow:
-			inset -0.6rem -0.6rem 2rem rgba(150, 170, 200, 0.35),
-			inset 0.5rem 0.45rem 1.25rem rgba(255, 255, 255, 0.85),
-			inset 0.15rem 0.15rem 0.5rem rgba(255, 255, 255, 0.9);
+			0 0 24px rgba(220, 235, 255, 0.4),
+			0 0 48px rgba(210, 228, 255, 0.2),
+			inset -0.7rem -0.7rem 2.2rem rgba(150, 175, 215, 0.2),
+			inset 0.55rem 0.5rem 1.6rem rgba(255, 255, 255, 0.55),
+			inset 0.25rem 0.25rem 0.7rem rgba(255, 255, 255, 0.6),
+			inset -0.2rem -0.2rem 0.5rem rgba(170, 195, 240, 0.15),
+			inset 0 0.35rem 0.8rem rgba(255, 255, 255, 0.35);
 		font-family: var(--font-sans);
 		font-weight: 600;
 		cursor: pointer;
