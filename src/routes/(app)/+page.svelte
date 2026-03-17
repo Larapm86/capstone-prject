@@ -5,6 +5,16 @@
 	import { stars } from '$lib/starsData';
 	import type { ActionData } from './$types';
 
+	/** Portal node to document.body so the white screen is never clipped or hidden by layout (fixes mobile). */
+	function portal(node: HTMLElement) {
+		document.body.appendChild(node);
+		return {
+			destroy() {
+				if (node.parentNode) node.parentNode.removeChild(node);
+			}
+		};
+	}
+
 	let { form }: { form: ActionData } = $props();
 
 	/** Form action for craving log – absolute URL so mobile/PWA always posts to the right route. */
@@ -32,6 +42,7 @@
 	let holdProgress = $state(0);
 	let spreadOrigin = $state({ x: 0, y: 0 });
 	let holdIntervalId: ReturnType<typeof setInterval> | null = null;
+	let holdCompleteTimeoutId: ReturnType<typeof setTimeout> | null = null;
 	let holdReleaseCleanup: (() => void) | null = null;
 	let holdStartTime = 0;
 	let showWinState = $state(false);
@@ -78,36 +89,54 @@
 		document.addEventListener('pointerup', onRelease, true);
 		document.addEventListener('pointercancel', onRelease, true);
 
+		const finishHold = () => {
+			if (holdIntervalId) clearInterval(holdIntervalId);
+			holdIntervalId = null;
+			if (holdCompleteTimeoutId) clearTimeout(holdCompleteTimeoutId);
+			holdCompleteTimeoutId = null;
+			holdReleaseCleanup?.();
+			holdReleaseCleanup = null;
+			holdProgress = 100;
+			phase = 'complete';
+			hasCompletedOnce = true;
+		};
+
 		holdIntervalId = setInterval(() => {
 			const elapsed = Date.now() - start;
 			holdProgress = Math.min(100, (elapsed / HOLD_DURATION_MS) * 100);
 			if (holdProgress >= 100) {
-				if (holdIntervalId) clearInterval(holdIntervalId);
-				holdIntervalId = null;
-				holdReleaseCleanup?.();
-				holdReleaseCleanup = null;
-				phase = 'complete';
-				hasCompletedOnce = true;
+				finishHold();
 			}
 		}, 16);
+
+		// On mobile, setInterval can be throttled; backup timeout guarantees white screen appears
+		holdCompleteTimeoutId = setTimeout(() => {
+			if (phase === 'holding') {
+				finishHold();
+			}
+		}, HOLD_DURATION_MS + 100);
 	}
 
 	function cancelHold() {
 		holdReleaseCleanup?.();
 		holdReleaseCleanup = null;
-		if (phase === 'holding' && holdIntervalId) {
-			clearInterval(holdIntervalId);
-			holdIntervalId = null;
-			// On mobile, pointercancel often fires near the end of a long press; treat near-complete as success
+		if (phase === 'holding') {
+			if (holdCompleteTimeoutId) {
+				clearTimeout(holdCompleteTimeoutId);
+				holdCompleteTimeoutId = null;
+			}
+			if (holdIntervalId) {
+				clearInterval(holdIntervalId);
+				holdIntervalId = null;
+			}
+			// On mobile, pointercancel often fires before full hold; treat 85%+ as success so white screen still shows
 			const elapsed = Date.now() - holdStartTime;
-			if (elapsed >= 0.95 * HOLD_DURATION_MS) {
+			if (elapsed >= 0.85 * HOLD_DURATION_MS) {
 				holdProgress = 100;
 				phase = 'complete';
 				hasCompletedOnce = true;
 				return;
 			}
-		}
-		if (phase === 'holding') {
 			phase = 'idle';
 			holdProgress = 0;
 		}
@@ -261,7 +290,7 @@
 {/if}
 
 {#if phase === 'complete'}
-	<div class="white-screen visible" role="dialog" aria-label="Reflecting on a craving">
+	<div class="white-screen visible" role="dialog" aria-label="Reflecting on a craving" use:portal>
 		<button type="button" class="close-button" onclick={closeWhite} aria-label="Close">
 			<span class="close-icon" aria-hidden="true">×</span>
 		</button>
@@ -784,11 +813,12 @@
 		transition: transform 0.2s ease-out, opacity 0.25s ease-out;
 		pointer-events: none;
 	}
+	/* Portaled to body so it always appears on top (fixes mobile where layout can hide it) */
 	.white-screen {
 		position: fixed;
 		inset: 0;
 		background: #fff;
-		z-index: 210;
+		z-index: 2147483647;
 		opacity: 0;
 		transition: opacity 0.5s ease-out;
 		display: flex;
