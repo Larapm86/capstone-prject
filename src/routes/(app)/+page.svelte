@@ -37,7 +37,7 @@
 
 	const HOLD_DURATION_MS = 3200;
 	/** Mobile: tap triggers white spread from button to full screen over this duration, then goto /craving */
-	const TAP_SPREAD_MS = 1000;
+	const TAP_SPREAD_MS = 1200;
 	const WIN_STATE_DURATION_MS = 1600;
 	const ERROR_DISPLAY_MS = 5000;
 	let phase = $state<'idle' | 'holding' | 'complete'>('idle');
@@ -78,7 +78,10 @@
 
 			holdIntervalId = setInterval(() => {
 				const elapsed = Date.now() - start;
-				holdProgress = Math.min(100, (elapsed / TAP_SPREAD_MS) * 100);
+				const t = Math.min(1, elapsed / TAP_SPREAD_MS);
+				// Ease-out cubic: faster at start, smooth deceleration at full screen
+				const eased = 1 - (1 - t) ** 3;
+				holdProgress = eased * 100;
 				if (holdProgress >= 100) {
 					if (holdIntervalId) clearInterval(holdIntervalId);
 					holdIntervalId = null;
@@ -265,7 +268,6 @@
 		<div class="track-below-grass" aria-hidden="true"></div>
 	</div>
 	<div class="reflect-stars-layer" aria-hidden="true">
-		<div class="reflect-milky"></div>
 		{#each stars as star}
 			<span
 				class="reflect-star reflect-star--s{star.s}"
@@ -395,8 +397,8 @@
 	}
 	@media (max-width: 480px) {
 		.hold-intro-wrap {
-			max-width: 18rem;
-			width: min(calc(100% - 2rem), 18rem);
+			max-width: 14rem;
+			width: min(calc(100% - 2rem), 14rem);
 			margin-top: 5rem;
 		}
 		.track-below-area {
@@ -574,19 +576,10 @@
 	.reflect-stars-layer {
 		position: fixed;
 		inset: 0;
-		z-index: 1;
+		z-index: 0;
 		pointer-events: none;
 		overflow: hidden;
-	}
-	.reflect-milky {
-		position: absolute;
-		inset: 0;
-		background: radial-gradient(
-			ellipse 120% 40% at 55% 25%,
-			rgba(255, 255, 255, 0.035) 0%,
-			rgba(255, 255, 255, 0.012) 40%,
-			transparent 70%
-		);
+		/* Transparent: no background, layout sky shows through */
 	}
 	.reflect-star {
 		position: absolute;
@@ -822,7 +815,7 @@
 	@media (max-width: 768px) {
 		.light-spread,
 		.white-spread {
-			transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+			transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 		}
 	}
 	.light-spread.complete {
