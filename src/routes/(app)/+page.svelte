@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
 	import { onMount } from 'svelte';
 	import { hasNewCravingForStats } from '$lib/stores/newCraving';
@@ -35,8 +36,6 @@
 	});
 
 	const HOLD_DURATION_MS = 3200;
-	/** On mobile: tap triggers this fill duration (smooth transition to white, then craving form). */
-	const TAP_FILL_MS = 1000;
 	const WIN_STATE_DURATION_MS = 1600;
 	const ERROR_DISPLAY_MS = 5000;
 	let phase = $state<'idle' | 'holding' | 'complete'>('idle');
@@ -65,7 +64,12 @@
 	function startHold(e: PointerEvent) {
 		if (phase !== 'idle') return;
 		const isTouch = e.pointerType === 'touch';
-		if (isTouch) e.preventDefault();
+		if (isTouch) {
+			e.preventDefault();
+			// Mobile: tap goes straight to /craving (its own route, no fill animation).
+			goto('/craving');
+			return;
+		}
 
 		const target = e.currentTarget as HTMLElement;
 		const rect = target.getBoundingClientRect();
@@ -75,10 +79,9 @@
 		holdStartTime = Date.now();
 		const start = holdStartTime;
 
-		// Mobile: tap only – smooth auto-fill (1s). Desktop: hold to fill (3.2s).
-		const durationMs = isTouch ? TAP_FILL_MS : HOLD_DURATION_MS;
+		const durationMs = HOLD_DURATION_MS;
 
-		if (!isTouch) {
+		{
 			const pointerId = e.pointerId;
 			try {
 				target.setPointerCapture(pointerId);
@@ -130,8 +133,7 @@
 				holdIntervalId = null;
 			}
 			const elapsed = Date.now() - holdStartTime;
-			const durationMs = elapsed < TAP_FILL_MS * 1.2 ? TAP_FILL_MS : HOLD_DURATION_MS;
-			if (elapsed >= 0.85 * durationMs) {
+			if (elapsed >= 0.85 * HOLD_DURATION_MS) {
 				holdProgress = 100;
 				phase = 'complete';
 				hasCompletedOnce = true;

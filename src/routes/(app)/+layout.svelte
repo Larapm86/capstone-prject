@@ -49,25 +49,28 @@
 	];
 </script>
 
-<div class="cravings-shell" class:landing>
-	<div class="milky-band" aria-hidden="true"></div>
-	<div class="stars" aria-hidden="true">
-		{#each stars as star}
-			<span
-				class="star star--s{star.s}"
-				style="left: {star.x}%; top: {star.y}%; animation-delay: {star.d}s; --brightness: {star.b};"
-			></span>
-		{/each}
-	</div>
-	<div class="shooting-star" class:run={shootingStarRun} aria-hidden="true">
-		<span class="shooting-star-streak"></span>
-	</div>
-	<img src="/logo.svg" alt="Becom" class="logo" width="174" height="79" />
+<div class="cravings-shell" class:landing class:craving-route={$page.url.pathname === '/craving'}>
+	{#if $page.url.pathname !== '/craving'}
+		<div class="milky-band" aria-hidden="true"></div>
+		<div class="stars" aria-hidden="true">
+			{#each stars as star}
+				<span
+					class="star star--s{star.s}"
+					style="left: {star.x}%; top: {star.y}%; animation-delay: {star.d}s; --brightness: {star.b};"
+				></span>
+			{/each}
+		</div>
+		<div class="shooting-star" class:run={shootingStarRun} aria-hidden="true">
+			<span class="shooting-star-streak"></span>
+		</div>
+		<img src="/logo.svg" alt="Becom" class="logo" width="174" height="79" />
+	{/if}
 
 	<main class="app-page screen-content">
 		{@render children()}
 	</main>
 
+	{#if $page.url.pathname !== '/craving'}
 	<nav class="bottom-nav" aria-label="Main">
 		{#each navItems as item}
 			<a
@@ -83,6 +86,7 @@
 			</a>
 		{/each}
 	</nav>
+	{/if}
 </div>
 
 <style>
@@ -92,6 +96,9 @@
 		visibility: hidden;
 		pointer-events: none;
 		transition: opacity 0.2s ease-out, visibility 0.2s ease-out;
+	}
+	.cravings-shell.craving-route {
+		background: #fff;
 	}
 	.cravings-shell {
 		position: relative;
