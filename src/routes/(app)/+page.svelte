@@ -1,24 +1,18 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { enhance } from '$app/forms';
+	import { onMount } from 'svelte';
 	import { hasNewCravingForStats } from '$lib/stores/newCraving';
 	import { stars } from '$lib/starsData';
 	import type { ActionData } from './$types';
 
-	/** Portal node to document.body so the white screen is never clipped or hidden by layout (fixes mobile). Deferred to avoid iOS crash during mount. */
-	function portal(node: HTMLElement) {
-		const id = requestAnimationFrame(() => {
-			if (node.isConnected && document.body) document.body.appendChild(node);
-		});
-		return {
-			destroy() {
-				cancelAnimationFrame(id);
-				if (node.parentNode) node.parentNode.removeChild(node);
-			}
-		};
-	}
-
 	let { form }: { form: ActionData } = $props();
+
+	/** On mobile we use tap + smooth fill; on desktop, hold. */
+	let isTouchDevice = $state(false);
+	onMount(() => {
+		isTouchDevice = typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches;
+	});
 
 	/** Form action for craving log – absolute URL so mobile/PWA always posts to the right route. Guard for SSR/mobile. */
 	const logCravingAction = $derived.by(() => {
@@ -41,6 +35,8 @@
 	});
 
 	const HOLD_DURATION_MS = 3200;
+	/** On mobile: tap triggers this fill duration (smooth transition to white, then craving form). */
+	const TAP_FILL_MS = 1000;
 	const WIN_STATE_DURATION_MS = 1600;
 	const ERROR_DISPLAY_MS = 5000;
 	let phase = $state<'idle' | 'holding' | 'complete'>('idle');
@@ -54,19 +50,24 @@
 	let trackFormMessage = $state<string | null>(null);
 	let hasCompletedOnce = $state(false);
 
+	function finishHold() {
+		if (holdIntervalId) clearInterval(holdIntervalId);
+		holdIntervalId = null;
+		if (holdCompleteTimeoutId) clearTimeout(holdCompleteTimeoutId);
+		holdCompleteTimeoutId = null;
+		holdReleaseCleanup?.();
+		holdReleaseCleanup = null;
+		holdProgress = 100;
+		phase = 'complete';
+		hasCompletedOnce = true;
+	}
+
 	function startHold(e: PointerEvent) {
 		if (phase !== 'idle') return;
-		// On mobile, prevent default touch behavior (scroll, context menu) so the hold can complete
-		if (e.pointerType === 'touch') {
-			e.preventDefault();
-		}
+		const isTouch = e.pointerType === 'touch';
+		if (isTouch) e.preventDefault();
+
 		const target = e.currentTarget as HTMLElement;
-		const pointerId = e.pointerId;
-		try {
-			target.setPointerCapture(pointerId);
-		} catch (_) {
-			// Some mobile browsers restrict setPointerCapture; document listeners still run
-		}
 		const rect = target.getBoundingClientRect();
 		spreadOrigin = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
 		phase = 'holding';
@@ -74,52 +75,46 @@
 		holdStartTime = Date.now();
 		const start = holdStartTime;
 
-		const releaseCapture = () => {
-			try {
-				target.releasePointerCapture(pointerId);
-			} catch (_) {}
-		};
-		const onRelease = (ev: PointerEvent) => {
-			if (ev.pointerId !== pointerId) return;
-			holdReleaseCleanup?.();
-			holdReleaseCleanup = null;
-			cancelHold();
-		};
-		const cleanup = () => {
-			releaseCapture();
-			document.removeEventListener('pointerup', onRelease, true);
-			document.removeEventListener('pointercancel', onRelease, true);
-		};
-		holdReleaseCleanup = cleanup;
-		document.addEventListener('pointerup', onRelease, true);
-		document.addEventListener('pointercancel', onRelease, true);
+		// Mobile: tap only – smooth auto-fill (1s). Desktop: hold to fill (3.2s).
+		const durationMs = isTouch ? TAP_FILL_MS : HOLD_DURATION_MS;
 
-		const finishHold = () => {
-			if (holdIntervalId) clearInterval(holdIntervalId);
-			holdIntervalId = null;
-			if (holdCompleteTimeoutId) clearTimeout(holdCompleteTimeoutId);
-			holdCompleteTimeoutId = null;
-			holdReleaseCleanup?.();
-			holdReleaseCleanup = null;
-			holdProgress = 100;
-			phase = 'complete';
-			hasCompletedOnce = true;
-		};
+		if (!isTouch) {
+			const pointerId = e.pointerId;
+			try {
+				target.setPointerCapture(pointerId);
+			} catch (_) {}
+			const releaseCapture = () => {
+				try {
+					target.releasePointerCapture(pointerId);
+				} catch (_) {}
+			};
+			const onRelease = (ev: PointerEvent) => {
+				if (ev.pointerId !== pointerId) return;
+				holdReleaseCleanup?.();
+				holdReleaseCleanup = null;
+				cancelHold();
+			};
+			const cleanup = () => {
+				releaseCapture();
+				document.removeEventListener('pointerup', onRelease, true);
+				document.removeEventListener('pointercancel', onRelease, true);
+			};
+			holdReleaseCleanup = cleanup;
+			document.addEventListener('pointerup', onRelease, true);
+			document.addEventListener('pointercancel', onRelease, true);
+		}
 
 		holdIntervalId = setInterval(() => {
 			const elapsed = Date.now() - start;
-			holdProgress = Math.min(100, (elapsed / HOLD_DURATION_MS) * 100);
+			holdProgress = Math.min(100, (elapsed / durationMs) * 100);
 			if (holdProgress >= 100) {
 				finishHold();
 			}
 		}, 16);
 
-		// On mobile, setInterval can be throttled; backup timeout guarantees white screen appears
 		holdCompleteTimeoutId = setTimeout(() => {
-			if (phase === 'holding') {
-				finishHold();
-			}
-		}, HOLD_DURATION_MS + 100);
+			if (phase === 'holding') finishHold();
+		}, durationMs + 100);
 	}
 
 	function cancelHold() {
@@ -134,9 +129,9 @@
 				clearInterval(holdIntervalId);
 				holdIntervalId = null;
 			}
-			// On mobile, pointercancel often fires before full hold; treat 85%+ as success so white screen still shows
 			const elapsed = Date.now() - holdStartTime;
-			if (elapsed >= 0.85 * HOLD_DURATION_MS) {
+			const durationMs = elapsed < TAP_FILL_MS * 1.2 ? TAP_FILL_MS : HOLD_DURATION_MS;
+			if (elapsed >= 0.85 * durationMs) {
 				holdProgress = 100;
 				phase = 'complete';
 				hasCompletedOnce = true;
@@ -185,8 +180,9 @@
 	style={phase === 'holding' || phase === 'complete' ? `--hold-progress: ${phase === 'complete' ? 100 : holdProgress}` : ''}
 >
 	<h2 id="log-heading">Log a craving</h2>
-	<p class="section-intro">Hold the button until the screen fills — then you’re in.</p>
-
+	<p class="section-intro">
+		{isTouchDevice ? 'Tap the button — the screen will fill and then you can log.' : 'Hold the button until the screen fills — then you’re in.'}
+	</p>
 	<svg width="0" height="0" aria-hidden="true" focusable="false">
 		<defs>
 			<clipPath id="hold-button-drop" clipPathUnits="objectBoundingBox">
@@ -219,14 +215,14 @@
 				onpointerleave={cancelHold}
 				onpointercancel={cancelHold}
 				oncontextmenu={(e) => e.preventDefault()}
-				aria-label={phase === 'holding' ? 'Keep holding until the Reflect screen appears' : 'Hold to open Reflect screen'}
+				aria-label={phase === 'holding' ? (isTouchDevice ? 'Screen is opening' : 'Keep holding until the Reflect screen appears') : (isTouchDevice ? 'Tap to open Reflect screen' : 'Hold to open Reflect screen')}
 			>
 				{#key phase}
 					<span class="hold-button-label" class:holding-text={phase === 'holding'}>
 						{#if phase === 'holding'}
-							Keep holding until the Reflect screen appears
+							{isTouchDevice ? 'Opening…' : 'Keep holding until the Reflect screen appears'}
 						{:else}
-							Hold to log
+							{isTouchDevice ? 'Tap to log' : 'Hold to log'}
 						{/if}
 					</span>
 				{/key}
@@ -295,7 +291,7 @@
 {/if}
 
 {#if phase === 'complete'}
-	<div class="white-screen visible" role="dialog" aria-label="Reflecting on a craving" use:portal>
+	<div class="white-screen visible" role="dialog" aria-label="Reflecting on a craving">
 		<button type="button" class="close-button" onclick={closeWhite} aria-label="Close">
 			<span class="close-icon" aria-hidden="true">×</span>
 		</button>
