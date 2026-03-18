@@ -7,7 +7,8 @@ export const load: PageServerLoad = async (event) => {
 	if (!event.locals.user) {
 		return redirect(302, '/login');
 	}
-	return {};
+	const parentData = await event.parent();
+	return { ...parentData };
 };
 
 export const actions: Actions = {
@@ -16,16 +17,12 @@ export const actions: Actions = {
 			return redirect(302, '/login');
 		}
 		const formData = await event.request.formData();
-		const noRedirect = formData.get('noRedirect') === '1';
 		const payload = parseLogCravingFormData(formData);
 		try {
 			const { cravingCount, level } = await logCravingService(event.locals.user.id, payload);
-			if (noRedirect) {
-				return { success: true, cravingCount, level };
-			}
+			return { success: true, cravingCount, level };
 		} catch (err) {
 			return fail(400, { message: err instanceof Error ? err.message : 'Invalid input.' });
 		}
-		return redirect(302, '/');
 	}
 };

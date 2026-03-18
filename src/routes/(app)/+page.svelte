@@ -1,15 +1,33 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
-	import { goto } from '$app/navigation';
+	import { goto, invalidate } from '$app/navigation';
 	import CravingForm from '$lib/components/craving-form/CravingForm.svelte';
+	import BecomLogo from '$lib/components/BecomLogo.svelte';
+	import { SKILLS } from '$lib/constants/skills';
 	import { hasNewCravingForStats } from '$lib/stores/newCraving';
 	import { levelOverride } from '$lib/stores/levelOverride';
 	import { reflectHoldState } from '$lib/stores/reflectHold';
 	import type { ActionData } from './$types';
 
-	let { data, form }: { data: { level?: number; cravingCount?: number }; form: ActionData } = $props();
+	let { data, form }: { data: { level?: number; cravingCount?: number; userName?: string | null; user?: { name?: string | null }; progress?: { current: number; required: number; label: string } }; form: ActionData } = $props();
 	const level = $derived($levelOverride ?? data?.level ?? 1);
+	const skillName = $derived(SKILLS[Math.min(level, SKILLS.length) - 1]?.name ?? 'Reflect');
+	const progress = $derived(data?.progress ?? { current: 0, required: 1, label: 'sessions' });
+	const progressPercent = $derived(
+		progress.required > 0 ? Math.min(100, (progress.current / progress.required) * 100) : 0
+	);
+
+	function getTimeBasedGreeting() {
+		const h = new Date().getHours();
+		if (h >= 5 && h < 12) return 'Good morning';
+		if (h >= 12 && h < 18) return 'Good afternoon';
+		if (h >= 18 && h < 21) return 'Good evening';
+		return 'Good night';
+	}
+	const greeting = $derived(getTimeBasedGreeting());
+	const userName = $derived(data?.userName ?? data?.user?.name ?? '');
+	const greetingLine = $derived(userName ? `${greeting}, ${userName}` : greeting);
 
 	/** On mobile we use tap + smooth fill; on desktop, hold. */
 	let isTouchDevice = $state(false);
@@ -251,19 +269,18 @@
 		if (fromSuccess) {
 			showHoldTooltip = false;
 			fireflyPhase = 'hidden';
-			// Delay, then firefly flies in
+			// Delay, then firefly flies in (invalidate only after sequence so $effect doesn't overwrite phase)
 			setTimeout(() => {
 				fireflyPhase = 'flying-in';
-				// After fly-in, show flash
 				setTimeout(() => {
 					fireflyPhase = 'idle';
 					showFireflyFlash = true;
 					setTimeout(() => {
 						showFireflyFlash = false;
-						// Show tooltip and Insights badge together 0.5s after the flash
 						setTimeout(() => {
 							showHoldTooltip = true;
 							hasNewCravingForStats.set(true);
+							invalidate();
 						}, TOOLTIP_AFTER_FLASH_MS);
 					}, FIREFLY_FLASH_MS);
 				}, FIREFLY_FLY_IN_MS);
@@ -273,19 +290,22 @@
 		}
 	}
 
-	function handleTrackResult(result: {
+	async function handleTrackResult(result: {
 		type: string;
 		data?: { success?: boolean; message?: string; cravingCount?: number };
+		error?: unknown;
 	}) {
 		submitting = false;
-		trackFormMessage = result.data?.message ?? null;
-		if (result.type === 'success' && result.data?.success) {
+		const msg = result.data?.message ?? (result.type === 'error' && result.error instanceof Error ? result.error.message : null);
+		trackFormMessage = msg ?? (result.type === 'failure' || result.type === 'error' ? 'Something went wrong. Try again.' : null);
+		if (result.type === 'success' && result.data?.success === true) {
 			showWinState = true;
-			if (typeof result.data.cravingCount === 'number') {
+			if (typeof result.data?.cravingCount === 'number') {
 				fireflyCount = result.data.cravingCount;
 			} else {
 				fireflyCount += 1;
 			}
+			hasNewCravingForStats.set(true);
 			if (typeof sessionStorage !== 'undefined') {
 				sessionStorage.setItem('becom-new-craving', '1');
 			}
@@ -293,12 +313,10 @@
 				winStateExiting = true;
 				setTimeout(() => closeWhite(true), WIN_STATE_FADEOUT_MS);
 			}, WIN_STATE_DURATION_MS);
-		} else if (result.type === 'failure') {
+		} else if (result.type === 'failure' || result.type === 'error') {
 			setTimeout(() => {
 				closeWhite();
 			}, ERROR_DISPLAY_MS);
-		} else {
-			submitting = false;
 		}
 	}
 </script>
@@ -314,7 +332,7 @@
 	class:returned={phase === 'idle' && hasCompletedOnce}
 	style={phase === 'holding' || phase === 'complete' ? `--hold-progress: ${phase === 'complete' ? 100 : holdProgress}` : ''}
 >
-	<h2 id="log-heading" class="page-title">Welcome</h2>
+	<h2 id="log-heading" class="page-title">{greetingLine}</h2>
 	<p class="section-intro">
 		This is your space. When you're ready, tap and hold. This pause is already your first step.
 	</p>
@@ -454,12 +472,16 @@
 		position: relative;
 		z-index: 3;
 	}
+	.track-section > h2.page-title,
+	.track-section > .section-intro {
+		text-align: center;
+	}
 	.hold-intro-wrap {
 		position: relative;
 		z-index: 4;
 		width: calc(100% - 2rem);
 		max-width: 22rem;
-		margin: 9rem auto 0 auto;
+		margin: 7rem auto 0 auto;
 		aspect-ratio: 1 / 1;
 	}
 	.track-below-spacer {
@@ -470,7 +492,7 @@
 		.hold-intro-wrap {
 			max-width: 13rem;
 			width: min(calc(100% - 2rem), 13rem);
-			margin-top: 11rem;
+			margin-top: 9rem;
 		}
 	}
 	.intro-jar-tap-area {
@@ -624,7 +646,7 @@
 		padding: 0.5rem 0.875rem;
 		white-space: nowrap;
 		font-size: 14px;
-		font-weight: 400; /* regular */
+		font-weight: 600;
 		font-family: 'Noto Sans', sans-serif;
 		color: rgba(255, 255, 255, 0.95);
 		background: rgba(20, 28, 38, 0.95);
@@ -1000,7 +1022,8 @@
 	.close-button {
 		position: absolute;
 		top: calc(1rem + env(safe-area-inset-top, 0px));
-		right: calc(1rem + env(safe-area-inset-right, 0px));
+		left: calc(1rem + env(safe-area-inset-left, 0px));
+		z-index: 10;
 		width: var(--min-touch);
 		height: var(--min-touch);
 		display: flex;
@@ -1038,7 +1061,7 @@
 		flex: 1;
 		min-height: 0;
 		width: 100%;
-		max-width: 20rem;
+		max-width: 28rem;
 	}
 	/* Above .white-screen so "Logged" is visible on top of the form overlay */
 	.win-state {

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
 	import { SKILLS } from '$lib/constants/skills';
 	import type { PageData } from './$types';
 
@@ -31,12 +30,19 @@
 </script>
 
 <svelte:head>
-	<title>Becom — Me</title>
+	<title>Becom — Skills</title>
 </svelte:head>
 
-<section class="me-section" aria-labelledby="me-heading">
-	<h1 id="me-heading" class="page-title me-title">Me</h1>
-	<p class="me-subtitle">Your journey</p>
+<div class="overlay-screen">
+	<a href="/" class="overlay-back" aria-label="Back to Reflect">
+		<svg class="overlay-back-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+			<path d="M19 12H5M12 19l-7-7 7-7"/>
+		</svg>
+	</a>
+	<div class="overlay-content">
+<section class="me-section" aria-labelledby="skills-heading">
+	<h1 id="skills-heading" class="page-title me-title">Skills</h1>
+	<p class="me-subtitle">These are the skills you're learning to rewrite your relationship with food.</p>
 
 	<div class="carousel-outer">
 		<div
@@ -71,6 +77,14 @@
 										<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
 											<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
 											<path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+										</svg>
+									{:else if isCurrent}
+										<svg class="island-badge-logo" width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+											<path d="M17.5185 11.6849H15.0684V29.0246H17.5185V11.6849Z" fill="currentColor"/>
+											<path d="M24.0661 13.0136C22.2134 15.9331 19.0432 17.6332 15.4019 18.0327H15.3981C14.2069 14.5686 14.3935 10.9743 16.2481 8.05299C18.1008 5.13163 21.2729 3.43159 24.9161 3.03391C26.1073 6.49996 25.9207 10.0923 24.0661 13.0136V13.0136Z" fill="currentColor"/>
+											<path opacity="0.2" d="M24.066 13.0136C22.2133 15.9331 19.0431 17.6332 15.4018 18.0327H15.3999L24.916 3.03578C26.1072 6.50183 25.9206 10.0942 24.066 13.0155V13.0136Z" fill="currentColor"/>
+											<path d="M15.4132 8.08128C17.2451 11.014 17.4072 14.6063 16.1916 18.0629V18.0667C12.5502 17.6426 9.39139 15.92 7.55941 12.9854C5.72743 10.0508 5.56535 6.45663 6.78101 3C10.4205 3.42407 13.5793 5.14673 15.4113 8.08128H15.4132Z" fill="currentColor"/>
+											<path opacity="0.2" d="M15.4132 8.08127C17.2452 11.0139 17.4073 14.6063 16.1916 18.0629H16.1897L6.78296 3.00188C10.4224 3.42595 13.5812 5.1486 15.4132 8.08316V8.08127Z" fill="currentColor"/>
 										</svg>
 									{:else}
 										<span class="island-badge__num">{skill.level}</span>
@@ -141,14 +155,59 @@
 			{/each}
 		</nav>
 	</div>
-
-	<form method="post" action="?/signOut" use:enhance class="sign-out-form">
-		<button type="submit" aria-label="Sign out of your account">Sign out</button>
-	</form>
 </section>
+	</div>
+</div>
 
 <style>
+	.overlay-screen {
+		position: fixed;
+		inset: 0;
+		background: var(--bg);
+		display: flex;
+		flex-direction: column;
+		z-index: 101;
+		padding-top: calc(1rem + env(safe-area-inset-top, 0px));
+		padding-right: calc(1rem + env(safe-area-inset-right, 0px));
+		padding-left: calc(1rem + env(safe-area-inset-left, 0px));
+		padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+	}
+	.overlay-content {
+		flex: 1;
+		min-height: 0;
+		overflow: auto;
+		padding-top: calc(var(--min-touch) - 0.5rem);
+		animation: overlay-content-in 0.2s ease-out 0.05s both;
+	}
+	@keyframes overlay-content-in {
+		from { opacity: 0; }
+		to { opacity: 1; }
+	}
+	.overlay-back {
+		position: absolute;
+		top: calc(1rem + env(safe-area-inset-top, 0px));
+		left: calc(1rem + env(safe-area-inset-left, 0px));
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: var(--min-touch);
+		height: var(--min-touch);
+		color: var(--text);
+		text-decoration: none;
+		border-radius: 0.5rem;
+		-webkit-tap-highlight-color: transparent;
+		z-index: 1;
+	}
+	.overlay-back:hover {
+		background: rgba(255, 255, 255, 0.08);
+	}
+	.overlay-back-icon {
+		flex-shrink: 0;
+		display: block;
+	}
 	.me-section {
+		margin-left: 24px;
+		margin-right: 24px;
 		padding-bottom: 3rem;
 	}
 	.me-title {
@@ -158,7 +217,7 @@
 	.me-subtitle {
 		font-size: 0.9rem;
 		color: var(--text-muted);
-		margin: 0 0 1.5rem 0;
+		margin: 0 0 2.5rem 0;
 	}
 
 	/* Horizontal carousel */
@@ -181,7 +240,7 @@
 	}
 	.carousel-card {
 		flex: 0 0 auto;
-		width: min(320px, calc(100vw - 2 * var(--page-padding)));
+		width: min(380px, calc(100vw - 2 * var(--page-padding)));
 		scroll-snap-align: center;
 		scroll-snap-stop: always;
 		display: flex;
@@ -225,52 +284,25 @@
 		margin-bottom: 0;
 		padding-top: 1rem;
 	}
+	/* Luminous track like pill and active island */
 	.carousel-card__progress-track {
-		height: 12px;
-		/* Hold-to-log style: blue-tinted, translucent track */
-		background: rgba(200, 222, 248, 0.18);
+		height: 14px;
+		min-height: 14px;
+		background: rgba(210, 230, 255, 0.22);
+		border: 1px solid rgba(220, 238, 255, 0.35);
 		border-radius: 999px;
 		overflow: hidden;
-		box-shadow:
-			inset 0 1px 2px rgba(0, 0, 0, 0.1),
-			0 0 0 1px rgba(210, 230, 255, 0.12);
+		box-shadow: 0 0 12px rgba(180, 210, 255, 0.2);
 	}
+	/* Same fill as pill + luminous glow like isometric island */
 	.carousel-card__progress-fill {
 		height: 100%;
-		/* Glossy fill: base blue + bright top reflection band */
-		background:
-			linear-gradient(
-				180deg,
-				rgba(255, 255, 255, 0.55) 0%,
-				rgba(255, 255, 255, 0.25) 28%,
-				transparent 50%
-			),
-			linear-gradient(
-				90deg,
-				rgba(220, 238, 255, 0.5) 0%,
-				rgba(200, 222, 248, 0.4) 50%,
-				rgba(175, 205, 240, 0.35) 100%
-			);
+		background: var(--island-side-dark);
 		border-radius: 999px;
 		transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-		box-shadow:
-			0 0 12px rgba(180, 210, 255, 0.25),
-			inset 0 2px 4px rgba(255, 255, 255, 0.35),
-			inset 0 1px 0 rgba(255, 255, 255, 0.5),
-			inset 0 -1px 0 rgba(0, 0, 0, 0.08);
-	}
-	.map-node.node--current .carousel-card__progress-track {
-		background: rgba(210, 230, 255, 0.22);
-		box-shadow:
-			inset 0 1px 2px rgba(0, 0, 0, 0.08),
-			0 0 0 1px rgba(220, 238, 255, 0.18);
-	}
-	.map-node.node--current .carousel-card__progress-fill {
-		box-shadow:
-			0 0 16px rgba(180, 210, 255, 0.35),
-			inset 0 2px 4px rgba(255, 255, 255, 0.4),
-			inset 0 1px 0 rgba(255, 255, 255, 0.6),
-			inset 0 -1px 0 rgba(0, 0, 0, 0.06);
+		min-width: 4px;
+		filter: drop-shadow(0 0 10px rgba(180, 210, 255, 0.45))
+			drop-shadow(0 0 20px rgba(160, 195, 240, 0.28));
 	}
 	.carousel-card__desc {
 		font-size: 16px;
@@ -311,6 +343,11 @@
 	.carousel-dot.active {
 		background: var(--text-muted);
 		transform: scale(1.15);
+	}
+	@media (min-width: 768px) {
+		.carousel-dots {
+			display: none;
+		}
 	}
 
 	/* Island: badge + SVG isometric tile (single shape, seamless joins) */
@@ -396,6 +433,13 @@
 	.island-badge__num {
 		line-height: 1;
 	}
+	.island-badge-logo {
+		display: block;
+	}
+	/* Active island badge: Becom logo in brand green */
+	.map-node.node--current .island-badge .island-badge-logo {
+		color: #8ADF11;
+	}
 	.map-node.node--locked .island-badge {
 		background: var(--island-badge-locked-bg);
 		color: var(--text-muted);
@@ -422,33 +466,6 @@
 		--island-top: var(--island-locked-top);
 		--island-side: var(--island-locked-side);
 		--island-side-dark: var(--island-locked-side-dark);
-	}
-
-	.sign-out-form {
-		margin-top: 2.5rem;
-		padding-top: 1.5rem;
-		border-top: 1px solid rgba(255, 255, 255, 0.08);
-	}
-	.sign-out-form button {
-		background: transparent;
-		color: var(--text-muted);
-		border: 1px solid var(--border);
-		width: 100%;
-		padding: 0.75rem 1rem;
-		border-radius: 12px;
-		font-family: var(--font-sans);
-		font-size: 0.9375rem;
-		cursor: pointer;
-		min-height: var(--min-touch);
-	}
-	.sign-out-form button:hover {
-		color: var(--text);
-		border-color: rgba(255, 255, 255, 0.2);
-	}
-	.sign-out-form button:focus-visible {
-		outline: 2px solid rgba(255, 255, 255, 0.4);
-		outline-offset: 2px;
-		color: var(--text);
 	}
 
 </style>

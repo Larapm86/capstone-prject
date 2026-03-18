@@ -27,6 +27,14 @@ export const STEPS_BY_LEVEL: StepDef[][] = [
 		{ stepKey: 'triggers', label: 'What arrived before this feeling?' },
 		{ stepKey: 'emotion', label: 'What is this craving trying to tell you?' }
 	],
+	/* Level 4: 4 steps (mindSaying introduced at L5) */
+	[
+		{ stepKey: 'text', label: 'What is your body asking for?' },
+		{ stepKey: 'triggers', label: 'What arrived before this feeling?' },
+		{ stepKey: 'emotion', label: 'What is this craving trying to tell you?' },
+		{ stepKey: 'familiar', label: 'Does this feel familiar?' }
+	],
+	/* Level 5: 5 steps */
 	[
 		{ stepKey: 'text', label: 'What is your body asking for?' },
 		{ stepKey: 'triggers', label: 'What arrived before this feeling?' },
@@ -34,6 +42,7 @@ export const STEPS_BY_LEVEL: StepDef[][] = [
 		{ stepKey: 'familiar', label: 'Does this feel familiar?' },
 		{ stepKey: 'mindSaying', label: 'What is your mind saying right now?', optional: true }
 	],
+	/* Level 6: 6 steps */
 	[
 		{ stepKey: 'text', label: 'What is your body asking for?' },
 		{ stepKey: 'triggers', label: 'What arrived before this feeling?' },
@@ -42,6 +51,7 @@ export const STEPS_BY_LEVEL: StepDef[][] = [
 		{ stepKey: 'mindSaying', label: 'What is your mind saying right now?', optional: true },
 		{ stepKey: 'needs', label: 'What does your body actually need?' }
 	],
+	/* Level 7: 7 steps */
 	[
 		{ stepKey: 'text', label: 'What is your body asking for?' },
 		{ stepKey: 'triggers', label: 'What arrived before this feeling?' },
@@ -50,16 +60,6 @@ export const STEPS_BY_LEVEL: StepDef[][] = [
 		{ stepKey: 'mindSaying', label: 'What is your mind saying right now?', optional: true },
 		{ stepKey: 'needs', label: 'What does your body actually need?' },
 		{ stepKey: 'choice', label: 'What do you want to do with it?' }
-	],
-	[
-		{ stepKey: 'text', label: 'What is your body asking for?' },
-		{ stepKey: 'triggers', label: 'What arrived before this feeling?' },
-		{ stepKey: 'emotion', label: 'What is this craving trying to tell you?' },
-		{ stepKey: 'familiar', label: 'Does this feel familiar?' },
-		{ stepKey: 'mindSaying', label: 'What is your mind saying right now?', optional: true },
-		{ stepKey: 'needs', label: 'What does your body actually need?' },
-		{ stepKey: 'choice', label: 'What do you want to do with it?' },
-		{ stepKey: 'beforeDuringAfter', label: 'How did you feel — before, during, after?' }
 	]
 ];
 

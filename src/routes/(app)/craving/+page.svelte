@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto, invalidate } from '$app/navigation';
 	import CravingForm from '$lib/components/craving-form/CravingForm.svelte';
 	import { hasNewCravingForStats } from '$lib/stores/newCraving';
 	import { levelOverride } from '$lib/stores/levelOverride';
@@ -16,7 +17,7 @@
 	const WIN_STATE_FADEOUT_MS = 450;
 	const ERROR_DISPLAY_MS = 5000;
 
-	function handleResult(result: { type: string; data?: { success?: boolean; message?: string } }) {
+	async function handleResult(result: { type: string; data?: { success?: boolean; message?: string } }) {
 		trackFormMessage = result.data?.message ?? null;
 		if (result.type === 'success' && result.data?.success) {
 			showWinState = true;
@@ -26,7 +27,11 @@
 			}
 			setTimeout(() => {
 				winStateExiting = true;
-				setTimeout(() => window.history.back(), WIN_STATE_FADEOUT_MS);
+				setTimeout(async () => {
+					// Refetch layout (level, progress) before navigating so pill shows updated progress when user lands
+					await invalidate();
+					goto('/');
+				}, WIN_STATE_FADEOUT_MS);
 			}, WIN_STATE_DURATION_MS);
 		} else if (result.type === 'failure') {
 			setTimeout(() => {
@@ -107,7 +112,8 @@
 	.close-link {
 		position: absolute;
 		top: calc(1rem + env(safe-area-inset-top, 0px));
-		right: calc(1rem + env(safe-area-inset-right, 0px));
+		left: calc(1rem + env(safe-area-inset-left, 0px));
+		z-index: 100;
 		width: var(--min-touch);
 		height: var(--min-touch);
 		display: flex;
@@ -127,14 +133,16 @@
 		flex: 1;
 		display: flex;
 		flex-direction: column;
-		align-items: center;
+		align-items: stretch;
 		justify-content: flex-start;
-		padding: 1rem 0 2rem;
+		padding: 1.5rem 0 2rem;
 		min-height: 0;
 		width: 100%;
-		max-width: 22rem;
+		max-width: min(56rem, 100%);
 		margin: 0 auto;
 		box-sizing: border-box;
+		padding-left: calc(1.5rem + env(safe-area-inset-left, 0px));
+		padding-right: calc(1.5rem + env(safe-area-inset-right, 0px));
 	}
 	.craving-content :global(.craving-form-inner) {
 		width: 100%;

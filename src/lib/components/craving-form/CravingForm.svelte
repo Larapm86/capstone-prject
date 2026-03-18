@@ -6,6 +6,7 @@
 		CRAVING_NEEDS,
 		MIND_SAYING_SUGGESTIONS
 	} from '$lib/constants/craving-options';
+	import { SKILLS } from '$lib/constants/skills';
 	import { getStepsForLevel } from './steps-config';
 
 	interface Props {
@@ -29,6 +30,7 @@
 	}: Props = $props();
 
 	const steps = $derived(getStepsForLevel(level));
+	const skillName = $derived(SKILLS[Math.min(level, SKILLS.length) - 1]?.name ?? 'Reflect');
 	let stepIndexState = $state({ index: 0 });
 	const currentStepIndex = $derived(stepIndexState.index);
 	const currentStep = $derived(steps[currentStepIndex]);
@@ -89,16 +91,23 @@
 	aria-label="Log a craving"
 	onsubmit={() => (submitting = true)}
 	use:enhance={() => {
-		return async ({ result }) => {
+		return async ({ result, update }) => {
 			submitting = false;
-			onResult?.({ type: result.type, data: result.data });
+			try {
+				const data = result.type === 'success' || result.type === 'failure' ? result.data : undefined;
+				const error = result.type === 'error' ? (result as { type: 'error'; error?: unknown }).error : undefined;
+				onResult?.({ type: result.type, data, error });
+				if (result.type !== 'success') {
+					await update();
+				}
+			} catch (e) {
+				onResult?.({ type: 'failure', data: { message: e instanceof Error ? e.message : 'Something went wrong.' } });
+			}
 		};
 	}}
 >
 	<input type="hidden" name="noRedirect" value={noRedirect ? '1' : '0'} />
-	<p class="step-indicator" aria-live="polite">
-		Step {currentStepIndex + 1} of {steps.length}
-	</p>
+	<p class="skill-indicator" aria-live="polite">{skillName}</p>
 	<!-- Hidden inputs for steps we've already passed -->
 	{#if currentStepIndex > 0}
 		<input type="hidden" name="text" value={text} />
@@ -336,9 +345,11 @@
 		height: 100%;
 		min-height: 0;
 		width: 100%;
-		max-width: 20rem;
+		max-width: 100%;
 		margin: 0 auto;
 		box-sizing: border-box;
+		overflow: hidden;
+		background: #fff;
 	}
 	.craving-form-constrain {
 		display: flex;
@@ -346,26 +357,32 @@
 		flex: 1;
 		min-height: 0;
 		max-width: 100%;
-		padding: 0 0.25rem;
+		padding: 0 0.5rem;
+		overflow: hidden;
 	}
-	.step-indicator {
-		font-size: 0.75rem;
-		color: rgba(1, 31, 59, 0.55);
-		margin: 0 0 0.5rem 0;
+	.skill-indicator {
+		margin: 0 0 1rem 0;
+		padding-left: calc(0.5rem + 8px);
+		padding-right: calc(0.5rem + 8px);
 		flex-shrink: 0;
+		font-size: 0.8125rem;
+		color: rgba(1, 31, 59, 0.5);
+		font-family: var(--font-sans);
 	}
 	.craving-form-scroll {
 		flex: 1;
+		min-height: 0;
+		overflow-x: hidden;
 		overflow-y: auto;
 		-webkit-overflow-scrolling: touch;
-		padding: 0.5rem 0 1rem;
+		padding: 0.75rem 8px 1.25rem;
 	}
 	.step-label {
 		display: block;
-		font-size: 1rem;
+		font-size: 1.0625rem;
 		font-weight: 600;
 		color: #011f3b;
-		margin-bottom: 0.75rem;
+		margin-bottom: 0.875rem;
 	}
 	.optional {
 		font-weight: 400;

@@ -2,11 +2,11 @@
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { page } from '$app/stores';
-	import { hasNewCravingForStats } from '$lib/stores/newCraving';
 	import { reflectHoldState } from '$lib/stores/reflectHold';
 	import { stars } from '$lib/starsData';
+	import ReflectProgressPill from '$lib/components/ReflectProgressPill.svelte';
 
-	let { children }: { children: import('svelte').Snippet } = $props();
+	let { data, children }: { data: { level?: number; progress?: { current: number; required: number; label: string } }; children: import('svelte').Snippet } = $props();
 	let shootingStarRun = $state(false);
 	let shootingStarTimeout: ReturnType<typeof setTimeout> | null = null;
 	let landing = $state(false);
@@ -44,11 +44,6 @@
 		return clearShootingStar;
 	});
 
-	const navItems = [
-		{ href: '/', label: 'Reflect', path: '/', icon: 'reflect' },
-		{ href: '/stats', label: 'Insights', path: '/stats', showNewBadge: true, icon: 'insights' },
-		{ href: '/settings', label: 'Me', path: '/settings', icon: 'me' }
-	];
 </script>
 
 <svg aria-hidden="true" focusable="false" style="position: absolute; width: 0; height: 0; overflow: hidden;">
@@ -60,6 +55,23 @@
 	</defs>
 </svg>
 <div class="cravings-shell" class:landing class:craving-route={$page.url.pathname === '/craving'}>
+	{#if $page.url.pathname !== '/craving' && !($page.url.pathname === '/' && $reflectHoldState?.phase === 'complete')}
+		<form method="POST" action="/sign-out" class="exit-button-wrap">
+			<button type="submit" class="exit-button" aria-label="Sign out">
+				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+					<g clip-path="url(#sign-out-clip)">
+						<path d="M2 21V3C2 2.73478 2.10536 2.48043 2.29289 2.29289C2.48043 2.10536 2.73478 2 3 2H7C7.55228 2 8 1.55228 8 1C8 0.447715 7.55228 0 7 0H3C2.20435 0 1.44129 0.31607 0.87868 0.87868C0.31607 1.44129 0 2.20435 0 3L0 21C0 21.7956 0.31607 22.5587 0.87868 23.1213C1.44129 23.6839 2.20435 24 3 24H7C7.55228 24 8 23.5523 8 23C8 22.4477 7.55228 22 7 22H3C2.73478 22 2.48043 21.8946 2.29289 21.7071C2.10536 21.5196 2 21.2652 2 21Z" fill="currentColor"/>
+						<path d="M23.1231 9.87839L19.2441 5.99939C18.8537 5.60892 18.2206 5.60892 17.8301 5.99939C17.4397 6.38985 17.4397 7.02292 17.8301 7.41339L21.3871 10.9704L5.99835 10.9976C5.44676 10.9986 5.00012 11.446 5.00012 11.9976C5.00012 12.5506 5.44891 12.9986 6.00189 12.9976L21.4431 12.9704L17.8281 16.5854C17.4377 16.9759 17.4377 17.6089 17.8281 17.9994C18.2186 18.3899 18.8517 18.3899 19.2421 17.9994L23.1211 14.1204C23.6838 13.5581 24.0001 12.7953 24.0005 11.9998C24.0009 11.2043 23.6853 10.4412 23.1231 9.87839Z" fill="currentColor"/>
+					</g>
+					<defs>
+						<clipPath id="sign-out-clip">
+							<rect width="24" height="24" fill="white"/>
+						</clipPath>
+					</defs>
+				</svg>
+			</button>
+		</form>
+	{/if}
 	{#if $page.url.pathname === '/'}
 		<!-- Tree/horizon full-bleed: rendered here so it's never inside the scroll container -->
 		<div
@@ -111,7 +123,7 @@
 	<main class="app-page screen-content">
 		<div class="page-transition-container">
 			{#key $page.url.pathname}
-				<div class="page-transition-wrap" in:fade={{ duration: 220 }} out:fade={{ duration: 160 }}>
+				<div class="page-transition-wrap" in:fade={{ duration: 160 }} out:fade={{ duration: 120 }}>
 					{@render children()}
 				</div>
 			{/key}
@@ -119,39 +131,48 @@
 	</main>
 
 	{#if $page.url.pathname !== '/craving'}
-	<nav class="bottom-nav" aria-label="Main">
-		{#each navItems as item}
-			<a
-				href={item.href}
-				class="nav-item"
-				class:active={$page.url.pathname === item.path}
-				aria-label={item.showNewBadge && $hasNewCravingForStats ? `${item.label} — new craving logged` : item.label}
+		<div class="bottom-bar-outer">
+			<div
+				class="bottom-bar reflect-progress-bar"
+				class:active={$page.url.pathname === '/'}
+				aria-hidden={$page.url.pathname !== '/'}
 			>
-				<span class="nav-icon" aria-hidden="true" style="opacity: {$page.url.pathname === item.path ? 1 : 0.55};">
-					<img
-						src="/icons/nav/icon_{item.icon}_{$page.url.pathname === item.path ? 'selected' : 'unselected'}.svg"
-						alt=""
-						width="24"
-						height="24"
-						class="nav-icon-img"
-					/>
-				</span>
-				<span class="nav-label">{item.label}</span>
-				{#if item.showNewBadge && $hasNewCravingForStats}
-					<span class="nav-badge" aria-hidden="true"></span>
-				{/if}
-			</a>
-		{/each}
-	</nav>
+				<ReflectProgressPill level={data?.level} progress={data?.progress} />
+			</div>
+		</div>
 	{/if}
 </div>
 
 <style>
-	:global(body.hold-active) .bottom-nav {
-		opacity: 0;
-		visibility: hidden;
-		pointer-events: none;
-		transition: opacity 0.2s ease-out, visibility 0.2s ease-out;
+	.exit-button-wrap {
+		position: fixed;
+		top: calc(1rem + env(safe-area-inset-top, 0px));
+		right: calc(1rem + env(safe-area-inset-right, 0px));
+		z-index: 99;
+	}
+	.exit-button {
+		width: 24px;
+		height: 24px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: transparent;
+		color: var(--text);
+		border: none;
+		border-radius: 0.5rem;
+		cursor: pointer;
+		-webkit-tap-highlight-color: transparent;
+		padding: 0;
+	}
+	.exit-button svg {
+		display: block;
+		opacity: 0.8;
+	}
+	.exit-button:hover svg {
+		opacity: 1;
+	}
+	.exit-button:hover {
+		background: rgba(255, 255, 255, 0.08);
 	}
 	.cravings-shell.craving-route {
 		background: #fff;
@@ -175,8 +196,14 @@
 			#0a1828 85%,
 			#0d1524 100%
 		);
-		/* Space for floating nav: nav height + gap below nav + safe area */
-		padding-bottom: calc(4rem + 1rem + 1rem + env(safe-area-inset-bottom, 0px));
+		/* Space for progress pill + safe area */
+		padding-bottom: calc(4rem + 1rem + env(safe-area-inset-bottom, 0px));
+	}
+	:global(body.hold-active) .bottom-bar-outer {
+		opacity: 0;
+		visibility: hidden;
+		pointer-events: none;
+		transition: opacity 0.2s ease-out, visibility 0.2s ease-out;
 	}
 	.cravings-shell.landing {
 		animation: cravings-land-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
@@ -414,89 +441,42 @@
 			min-height: 0;
 			overflow-y: visible;
 		}
+		.bottom-bar-outer {
+			bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+		}
 	}
-	.bottom-nav {
+	.bottom-bar-outer {
 		position: fixed;
-		bottom: calc(2rem + env(safe-area-inset-bottom, 0px));
+		bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
 		left: 50%;
 		transform: translateX(-50%);
 		width: calc(100% - 2rem);
 		max-width: 400px;
+		min-height: 5rem;
+		z-index: 100;
+		pointer-events: none;
+	}
+	.bottom-bar-outer > .active {
+		pointer-events: auto;
+	}
+	.reflect-progress-bar {
+		position: absolute;
+		left: 50%;
+		transform: translateX(-50%);
+		bottom: calc(1.75rem + env(safe-area-inset-bottom, 0px));
+		width: 100%;
+		max-width: 400px;
 		display: flex;
 		align-items: stretch;
-		justify-content: space-between;
-		padding: 8px 32px;
-		background: rgba(45, 50, 60, 0.4);
-		backdrop-filter: blur(20px) saturate(1.2);
-		-webkit-backdrop-filter: blur(20px) saturate(1.2);
-		border: 1px solid rgba(255, 255, 255, 0.1);
-		border-radius: 9999px;
-		box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
-		z-index: 100;
-	}
-	.nav-item {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
 		justify-content: center;
-		gap: 0;
-		min-height: var(--min-touch);
-		padding: 2px 4px;
-		color: rgba(255, 255, 255, 0.55);
-		text-decoration: none;
-		font-weight: 500;
-		font-size: 14px;
-		border-radius: 0.5rem;
-		transition: color 0.32s ease-out, font-weight 0.28s ease-out, transform 0.25s ease-out;
+		opacity: 0;
+		visibility: hidden;
+		pointer-events: none;
+		transition: opacity 0.22s ease-out, visibility 0.22s ease-out;
 	}
-	.nav-icon {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		line-height: 0;
-		transition: opacity 0.32s ease-out, transform 0.28s ease-out;
-	}
-	.nav-item.active .nav-icon {
-		transform: scale(1.04);
-	}
-	.nav-icon-img {
-		display: block;
-		width: 24px;
-		height: 24px;
-		flex-shrink: 0;
-	}
-	.nav-item:hover {
-		color: rgba(255, 255, 255, 0.85);
-	}
-	.nav-item.active {
-		color: #ffffff;
-		font-weight: 600;
-	}
-	.nav-label {
-		white-space: nowrap;
-	}
-	.nav-item {
-		position: relative;
-	}
-	.nav-badge {
-		position: absolute;
-		top: 0.35rem;
-		right: 0.35rem;
-		width: 0.5rem;
-		height: 0.5rem;
-		background: #fff;
-		border-radius: 50%;
-	}
-	.nav-item:first-child .nav-badge {
-		right: 0.25rem;
-	}
-	.nav-item:last-child .nav-badge {
-		right: 0.35rem;
-	}
-	@media (min-width: 768px) {
-		.nav-icon-img {
-			width: 32px;
-			height: 32px;
-		}
+	.reflect-progress-bar.active {
+		opacity: 1;
+		visibility: visible;
+		pointer-events: auto;
 	}
 </style>
