@@ -217,14 +217,6 @@
 	<p class="section-intro">
 		This is your space. When you're ready, tap and hold. This pause is already your first step.
 	</p>
-	<svg aria-hidden="true" focusable="false" style="position: absolute; width: 0; height: 0; overflow: hidden;">
-		<defs>
-			<clipPath id="hold-button-drop" clipPathUnits="objectBoundingBox">
-				<!-- Top 3/4 of circle: arc over the top, flat chord at bottom (y=0.75) -->
-				<path d="M 0.067 0.75 L 0.933 0.75 A 0.5 0.5 0 1 0 0.067 0.75 Z" />
-			</clipPath>
-		</defs>
-	</svg>
 	<div class="hold-intro-wrap">
 		<div
 			class="hold-button-wrap"
@@ -233,33 +225,39 @@
 			class:landing={introLanding}
 			style={phase === 'holding' || phase === 'complete' ? `--hold-progress: ${phase === 'complete' ? 100 : holdProgress}` : ''}
 		>
-			<div
-				class="hold-button-halo"
-				class:flicker={phase === 'idle'}
-				style="clip-path: url(#hold-button-drop)"
-				aria-hidden="true"
-			></div>
+		<div
+			class="hold-button-halo"
+			class:flicker={phase === 'idle'}
+			style="clip-path: url(#hold-button-drop)"
+			aria-hidden="true"
+		></div>
+			{#if phase === 'idle'}
+				<span
+					id="hold-to-log-tooltip"
+					class="hold-tooltip"
+					role="tooltip"
+				>
+					Tap and hold to enter
+				</span>
+			{/if}
 			<button
 				type="button"
 				class="hold-button"
 				class:flicker={phase === 'idle'}
 				style="clip-path: url(#hold-button-drop)"
+				aria-describedby={phase === 'idle' ? 'hold-to-log-tooltip' : undefined}
 				onpointerdown={startHold}
 				onpointerup={cancelHold}
 				onpointerleave={cancelHold}
 				onpointercancel={cancelHold}
 				oncontextmenu={(e) => e.preventDefault()}
-				aria-label={phase === 'holding' ? (isTouchDevice ? 'Screen is opening' : 'Keep holding until the Reflect screen appears') : (isTouchDevice ? 'Tap to open Reflect screen' : 'Hold to open Reflect screen')}
+				aria-label={phase === 'holding' ? (isTouchDevice ? 'Screen is opening' : 'Keep holding until the Reflect screen appears') : 'Tap and hold to enter Reflect screen'}
 			>
-				{#key phase}
-					<span class="hold-button-label" class:holding-text={phase === 'holding'}>
-						{#if phase === 'holding'}
-							{isTouchDevice ? 'Opening…' : 'Keep holding until the Reflect screen appears'}
-						{:else}
-							{isTouchDevice ? 'Tap to log' : 'Hold to log'}
-						{/if}
+				{#if phase === 'holding'}
+					<span class="hold-button-label holding-text">
+						{isTouchDevice ? 'Opening…' : 'Keep holding until the Reflect screen appears'}
 					</span>
-				{/key}
+				{/if}
 			</button>
 		</div>
 	</div>
@@ -678,6 +676,40 @@
 	.hold-button-wrap.holding .hold-button-label {
 		opacity: clamp(0, (75 - var(--hold-progress, 0)) / 60, 1);
 		transition: opacity 0.28s ease-out;
+	}
+	.hold-tooltip {
+		position: absolute;
+		left: 50%;
+		bottom: 100%;
+		transform: translateX(-50%);
+		margin-bottom: 0.75rem;
+		padding: 0.5rem 0.875rem;
+		white-space: nowrap;
+		font-size: 14px;
+		font-weight: 400; /* regular */
+		font-family: 'Noto Sans', sans-serif;
+		color: rgba(255, 255, 255, 0.95);
+		background: rgba(20, 28, 38, 0.95);
+		border: 1px solid rgba(255, 255, 255, 0.12);
+		border-radius: 8px;
+		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+		pointer-events: none;
+		animation: hold-label-fade-in 0.4s ease-out forwards, hold-tooltip-float 2.8s ease-in-out 0.5s infinite;
+	}
+	@keyframes hold-tooltip-float {
+		0%, 100% { transform: translateX(-50%) translateY(0); }
+		50% { transform: translateX(-50%) translateY(-5px); }
+	}
+	/* Tooltip arrow pointing down at the button */
+	.hold-tooltip::after {
+		content: '';
+		position: absolute;
+		left: 50%;
+		top: 100%;
+		transform: translateX(-50%);
+		border: 6px solid transparent;
+		border-top-color: rgba(20, 28, 38, 0.95);
+		filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.12));
 	}
 	.hold-button-label {
 		animation: hold-label-fade-in 0.4s ease-out forwards;

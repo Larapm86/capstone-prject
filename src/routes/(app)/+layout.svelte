@@ -50,6 +50,14 @@
 	];
 </script>
 
+<svg aria-hidden="true" focusable="false" style="position: absolute; width: 0; height: 0; overflow: hidden;">
+	<defs>
+		<clipPath id="hold-button-drop" clipPathUnits="objectBoundingBox">
+			<!-- Top 3/4 of circle: arc over the top, flat chord at bottom (y=0.75) -->
+			<path d="M 0.067 0.75 L 0.933 0.75 A 0.5 0.5 0 1 0 0.067 0.75 Z" />
+		</clipPath>
+	</defs>
+</svg>
 <div class="cravings-shell" class:landing class:craving-route={$page.url.pathname === '/craving'}>
 	{#if $page.url.pathname !== '/craving'}
 		<div class="milky-band" aria-hidden="true"></div>
@@ -67,11 +75,13 @@
 	{/if}
 
 	<main class="app-page screen-content">
-		{#key $page.url.pathname}
-			<div class="page-transition-wrap" in:fade={{ duration: 220 }} out:fade={{ duration: 160 }}>
-				{@render children()}
-			</div>
-		{/key}
+		<div class="page-transition-container">
+			{#key $page.url.pathname}
+				<div class="page-transition-wrap" in:fade={{ duration: 220 }} out:fade={{ duration: 160 }}>
+					{@render children()}
+				</div>
+			{/key}
+		</div>
 	</main>
 
 	{#if $page.url.pathname !== '/craving'}
@@ -240,6 +250,23 @@
 	}
 	.screen-content {
 		flex: 1;
+		position: relative;
+		min-height: 0;
+	}
+	.page-transition-container {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		min-height: 100%;
+		overflow: hidden;
+	}
+	.page-transition-wrap {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		min-height: 100%;
+		overflow-y: auto;
+		-webkit-overflow-scrolling: touch;
 	}
 	.bottom-nav {
 		position: fixed;
@@ -259,10 +286,6 @@
 		border-radius: 9999px;
 		box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
 		z-index: 100;
-	}
-	.page-transition-wrap {
-		width: 100%;
-		min-height: 0;
 	}
 	.nav-item {
 		display: flex;
