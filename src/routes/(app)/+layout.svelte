@@ -3,6 +3,7 @@
 	import { fade } from 'svelte/transition';
 	import { page } from '$app/stores';
 	import { hasNewCravingForStats } from '$lib/stores/newCraving';
+	import { reflectHoldState } from '$lib/stores/reflectHold';
 	import { stars } from '$lib/starsData';
 
 	let { children } = $props();
@@ -59,6 +60,38 @@
 	</defs>
 </svg>
 <div class="cravings-shell" class:landing class:craving-route={$page.url.pathname === '/craving'}>
+	{#if $page.url.pathname === '/'}
+		<!-- Tree/horizon full-bleed: rendered here so it's never inside the scroll container -->
+		<div
+			class="reflect-bg-layer"
+			class:holding={$reflectHoldState.phase === 'holding' || $reflectHoldState.phase === 'complete'}
+			aria-hidden="true"
+			style={$reflectHoldState.phase !== 'idle' ? `--hold-progress: ${$reflectHoldState.phase === 'complete' ? 100 : $reflectHoldState.holdProgress}` : ''}
+		>
+			<div class="reflect-bg-track-below">
+				<div class="reflect-bg-grass"></div>
+			</div>
+			<div class="reflect-bg-stars">
+				{#each stars as star}
+					<span
+						class="reflect-bg-star reflect-bg-star--s{star.s}"
+						style="left: {star.x}%; top: {star.y}%; animation-delay: {star.d}s; --brightness: {star.b};"
+					></span>
+				{/each}
+			</div>
+			<div class="reflect-bg-horizon"></div>
+			<div class="reflect-bg-silhouette">
+				<svg class="reflect-bg-silhouette-svg" viewBox="0 0 400 200" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+					<polygon points="0,200 0,132 25,145 50,120 80,132 110,112 140,125 170,105 200,118 230,102 260,114 290,98 320,110 350,94 380,104 400,100 400,200" fill="#051a12" />
+					<polygon points="0,200 0,152 30,162 60,148 95,155 130,138 165,146 200,128 235,138 270,124 305,134 340,120 370,128 400,126 400,200" fill="#041510" />
+					<polygon points="0,200 15,168 45,174 75,160 108,168 140,152 175,160 208,144 242,154 275,140 308,148 342,136 375,144 400,142 400,200" fill="#031812" />
+					<polygon points="0,200 22,176 55,182 88,168 120,174 155,160 190,166 225,152 260,160 295,148 330,156 365,144 400,152 400,200" fill="#030d0a" />
+					<polygon points="0,200 28,180 62,184 95,172 128,178 162,166 198,172 232,162 268,168 302,158 338,164 400,170 400,200" fill="#020a08" />
+					<polygon points="0,200 0,188 80,191 160,187 240,190 320,188 400,191 400,200" fill="#031812" fill-opacity="0.7" />
+				</svg>
+			</div>
+		</div>
+	{/if}
 	{#if $page.url.pathname !== '/craving'}
 		<div class="milky-band" aria-hidden="true"></div>
 		<div class="stars" aria-hidden="true">
@@ -129,7 +162,7 @@
 		height: 100%;
 		min-height: 100vh;
 		max-height: 100dvh;
-		overflow: hidden;
+		/* No overflow: hidden so Reflect tree/horizon (sibling of main) can span full width */
 		/* Deep night sky: darkest at top, lighter toward horizon, hint of purple */
 		background: linear-gradient(
 			180deg,
@@ -146,6 +179,93 @@
 	}
 	.cravings-shell.landing {
 		animation: cravings-land-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+	}
+	/* Reflect page: tree/horizon full-bleed (sibling of main, so never clipped) */
+	.reflect-bg-layer {
+		position: absolute;
+		inset: 0;
+		z-index: 0;
+		pointer-events: none;
+		overflow: visible;
+	}
+	.reflect-bg-layer .reflect-bg-track-below {
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		width: 100%;
+		height: 54vh;
+		min-height: 200px;
+		z-index: 1;
+		overflow: hidden;
+		clip-path: polygon(
+			0% 100%, 0% 58%, 5% 52%, 10% 56%, 15% 50%, 20% 54%, 25% 49%, 30% 53%, 35% 48%,
+			40% 52%, 45% 47%, 50% 51%, 55% 49%, 60% 53%, 65% 48%, 70% 52%, 75% 50%, 80% 54%,
+			85% 49%, 90% 53%, 95% 51%, 100% 55%, 100% 100%
+		);
+		background: linear-gradient(to top, #031a20 0%, #041e24 22%, #052228 45%, #051D26 70%, #041b22 100%);
+	}
+	.reflect-bg-layer .reflect-bg-grass {
+		position: absolute;
+		inset: 0;
+		background-image:
+			linear-gradient(to top, transparent 0%, transparent 35%, rgba(0, 30, 28, 0.15) 100%),
+			repeating-linear-gradient(88deg, transparent 0, transparent 2px, rgba(0, 48, 46, 0.32) 2px, rgba(0, 48, 46, 0.32) 3px),
+			repeating-linear-gradient(92deg, transparent 0, transparent 3px, rgba(0, 44, 42, 0.22) 3px, rgba(0, 44, 42, 0.22) 4px),
+			repeating-linear-gradient(90deg, transparent 0, transparent 4px, rgba(0, 40, 38, 0.14) 4px, rgba(0, 40, 38, 0.14) 5px),
+			repeating-linear-gradient(86deg, transparent 0, transparent 5px, rgba(0, 42, 40, 0.1) 5px, rgba(0, 42, 40, 0.1) 6px);
+	}
+	.reflect-bg-layer .reflect-bg-stars {
+		position: absolute;
+		inset: 0;
+		z-index: 0;
+		overflow: hidden;
+	}
+	.reflect-bg-layer .reflect-bg-star {
+		position: absolute;
+		border-radius: 50%;
+		background: rgba(255, 255, 255, 0.95);
+		opacity: var(--brightness, 0.9);
+		animation: reflect-bg-star-blink 3s ease-in-out infinite;
+	}
+	.reflect-bg-layer .reflect-bg-star--s1 { width: 1px; height: 1px; }
+	.reflect-bg-layer .reflect-bg-star--s2 { width: 2px; height: 2px; }
+	.reflect-bg-layer .reflect-bg-star--s3 { width: 3px; height: 3px; }
+	@keyframes reflect-bg-star-blink {
+		0%, 100% { opacity: calc(var(--brightness, 0.9) * 0.3); transform: scale(1); }
+		50% { opacity: var(--brightness, 0.9); transform: scale(1.15); }
+	}
+	.reflect-bg-layer .reflect-bg-horizon {
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		height: 50vh;
+		z-index: 1;
+		background: linear-gradient(to top, rgba(0, 55, 60, 0.55) 0%, rgba(0, 70, 72, 0.25) 30%, rgba(0, 50, 55, 0.08) 55%, transparent 85%);
+	}
+	.reflect-bg-layer .reflect-bg-silhouette {
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		height: 36vh;
+		min-height: 130px;
+		z-index: 2;
+		background: #041210;
+	}
+	.reflect-bg-layer .reflect-bg-silhouette-svg {
+		width: 100%;
+		height: 100%;
+		display: block;
+		object-fit: cover;
+		object-position: bottom center;
+	}
+	.reflect-bg-layer.holding .reflect-bg-track-below,
+	.reflect-bg-layer.holding .reflect-bg-horizon,
+	.reflect-bg-layer.holding .reflect-bg-silhouette {
+		opacity: clamp(0, (50 - var(--hold-progress, 0)) / 45, 1);
+		transition: opacity 0.28s ease-out;
 	}
 	@keyframes cravings-land-in {
 		from {
@@ -252,6 +372,7 @@
 		flex: 1;
 		position: relative;
 		min-height: 0;
+		z-index: 1;
 	}
 	.page-transition-container {
 		position: absolute;

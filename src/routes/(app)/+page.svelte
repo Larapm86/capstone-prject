@@ -4,7 +4,7 @@
 	import { enhance } from '$app/forms';
 	import { onMount } from 'svelte';
 	import { hasNewCravingForStats } from '$lib/stores/newCraving';
-	import { stars } from '$lib/starsData';
+	import { reflectHoldState } from '$lib/stores/reflectHold';
 	import type { ActionData } from './$types';
 
 	let { form }: { form: ActionData } = $props();
@@ -35,6 +35,11 @@
 		};
 	});
 
+	/** Sync hold state to layout so tree/horizon (rendered in layout) can fade when holding */
+	$effect(() => {
+		reflectHoldState.set({ phase, holdProgress });
+	});
+
 	const HOLD_DURATION_MS = 3200;
 	/** Mobile: tap triggers white spread from button to full screen over this duration, then goto /craving */
 	const TAP_SPREAD_MS = 1200;
@@ -50,6 +55,7 @@
 	let showWinState = $state(false);
 	let trackFormMessage = $state<string | null>(null);
 	let hasCompletedOnce = $state(false);
+	let showFireflyFlash = $state(false);
 
 	function finishHold() {
 		if (holdIntervalId) clearInterval(holdIntervalId);
@@ -176,11 +182,17 @@
 		}
 	}
 
-	function closeWhite() {
+	function closeWhite(fromSuccess?: boolean) {
 		phase = 'idle';
 		holdProgress = 0;
 		showWinState = false;
 		trackFormMessage = null;
+		if (fromSuccess) {
+			showFireflyFlash = true;
+			setTimeout(() => {
+				showFireflyFlash = false;
+			}, 1000);
+		}
 	}
 
 	function handleTrackResult(result: { type: string; data?: { success?: boolean; message?: string } }) {
@@ -192,7 +204,7 @@
 				sessionStorage.setItem('becom-new-craving', '1');
 			}
 			setTimeout(() => {
-				closeWhite();
+				closeWhite(true);
 			}, WIN_STATE_DURATION_MS);
 		} else if (result.type === 'failure') {
 			setTimeout(() => {
@@ -244,6 +256,7 @@
 				type="button"
 				class="hold-button"
 				class:flicker={phase === 'idle'}
+				class:firefly-flash={showFireflyFlash}
 				style="clip-path: url(#hold-button-drop)"
 				aria-describedby={phase === 'idle' ? 'hold-to-log-tooltip' : undefined}
 				onpointerdown={startHold}
@@ -258,38 +271,20 @@
 						{isTouchDevice ? 'Opening…' : 'Keep holding until the Reflect screen appears'}
 					</span>
 				{/if}
+				<span
+					class="hold-button-firefly"
+					class:flash={showFireflyFlash}
+					aria-hidden="true"
+				></span>
+				{#if showFireflyFlash}
+					<span class="hold-button-flash-overlay" aria-hidden="true"></span>
+				{/if}
 			</button>
 		</div>
 	</div>
 
-	<div class="track-below-area" aria-hidden="true">
-		<div class="track-below-grass" aria-hidden="true"></div>
-	</div>
-	<div class="reflect-stars-layer" aria-hidden="true">
-		{#each stars as star}
-			<span
-				class="reflect-star reflect-star--s{star.s}"
-				style="left: {star.x}%; top: {star.y}%; animation-delay: {star.d}s; --brightness: {star.b};"
-			></span>
-		{/each}
-	</div>
-	<div class="horizon-glow" aria-hidden="true"></div>
-	<div class="night-silhouette" aria-hidden="true">
-		<svg class="silhouette-svg" viewBox="0 0 400 200" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-			<!-- Back: distant range, peaks pulled up a bit -->
-			<polygon points="0,200 0,132 25,145 50,120 80,132 110,112 140,125 170,105 200,118 230,102 260,114 290,98 320,110 350,94 380,104 400,100 400,200" fill="#051a12" />
-			<!-- Mid-back: ridges a bit higher -->
-			<polygon points="0,200 0,152 30,162 60,148 95,155 130,138 165,146 200,128 235,138 270,124 305,134 340,120 370,128 400,126 400,200" fill="#041510" />
-			<!-- Mid: trees pulled up -->
-			<polygon points="0,200 15,168 45,174 75,160 108,168 140,152 175,160 208,144 242,154 275,140 308,148 342,136 375,144 400,142 400,200" fill="#031812" />
-			<!-- Front: a bit higher -->
-			<polygon points="0,200 22,176 55,182 88,168 120,174 155,160 190,166 225,152 260,160 295,148 330,156 365,144 400,152 400,200" fill="#030d0a" />
-			<!-- Foreground: peaks pulled up -->
-			<polygon points="0,200 28,180 62,184 95,172 128,178 162,166 198,172 232,162 268,168 302,158 338,164 400,170 400,200" fill="#020a08" />
-			<!-- Last row: subtle, soft undulation -->
-			<polygon points="0,200 0,188 80,191 160,187 240,190 320,188 400,191 400,200" fill="#031812" fill-opacity="0.7" />
-		</svg>
-	</div>
+	<!-- Spacer: tree/horizon are rendered in layout (full-bleed) when on Reflect -->
+	<div class="track-below-spacer" aria-hidden="true"></div>
 
 	{#if form?.message}
 		<p class="error" role="alert">{form.message}</p>
@@ -393,14 +388,15 @@
 		margin: 9rem auto 0 auto;
 		aspect-ratio: 1 / 1;
 	}
+	.track-below-spacer {
+		flex: 1;
+		min-height: 18vh;
+	}
 	@media (max-width: 480px) {
 		.hold-intro-wrap {
 			max-width: 13rem;
 			width: min(calc(100% - 2rem), 13rem);
 			margin-top: 11rem;
-		}
-		.track-below-area {
-			margin-top: -8rem;
 		}
 	}
 	.intro-jar-tap-area {
@@ -510,142 +506,10 @@
 		opacity: 1;
 		transform: scale(1);
 	}
-	.track-below-area {
-		position: relative;
-		flex: 1;
-		min-height: 18vh;
-		margin: 0 calc(50% - 50vw);
-		margin-top: -10rem;
-		width: 100vw;
-		z-index: 1;
-		pointer-events: none;
-		overflow: hidden;
-		/* Jagged treeline at top instead of straight edge */
-		clip-path: polygon(
-			0% 100%, 0% 58%, 5% 52%, 10% 56%, 15% 50%, 20% 54%, 25% 49%, 30% 53%, 35% 48%,
-			40% 52%, 45% 47%, 50% 51%, 55% 49%, 60% 53%, 65% 48%, 70% 52%, 75% 50%, 80% 54%,
-			85% 49%, 90% 53%, 95% 51%, 100% 55%, 100% 100%
-		);
-		/* Depth: darker at bottom, slight variation toward horizon */
-		background: linear-gradient(
-			to top,
-			#031a20 0%,
-			#041e24 22%,
-			#052228 45%,
-			#051D26 70%,
-			#041b22 100%
-		);
-	}
-	.track-below-grass {
-		position: absolute;
-		inset: 0;
-		/* Grass: blades + extra angle for clumps/depth, stronger toward bottom */
-		background-image:
-			linear-gradient(to top, transparent 0%, transparent 35%, rgba(0, 30, 28, 0.15) 100%),
-			repeating-linear-gradient(
-				88deg,
-				transparent 0,
-				transparent 2px,
-				rgba(0, 48, 46, 0.32) 2px,
-				rgba(0, 48, 46, 0.32) 3px
-			),
-			repeating-linear-gradient(
-				92deg,
-				transparent 0,
-				transparent 3px,
-				rgba(0, 44, 42, 0.22) 3px,
-				rgba(0, 44, 42, 0.22) 4px
-			),
-			repeating-linear-gradient(
-				90deg,
-				transparent 0,
-				transparent 4px,
-				rgba(0, 40, 38, 0.14) 4px,
-				rgba(0, 40, 38, 0.14) 5px
-			),
-			repeating-linear-gradient(
-				86deg,
-				transparent 0,
-				transparent 5px,
-				rgba(0, 42, 40, 0.1) 5px,
-				rgba(0, 42, 40, 0.1) 6px
-			);
-	}
-	.reflect-stars-layer {
-		position: fixed;
-		inset: 0;
-		z-index: 0;
-		pointer-events: none;
-		overflow: hidden;
-		/* Transparent: no background, layout sky shows through */
-	}
-	.reflect-star {
-		position: absolute;
-		border-radius: 50%;
-		background: rgba(255, 255, 255, 0.95);
-		opacity: var(--brightness, 0.9);
-		animation: reflect-star-blink 3s ease-in-out infinite;
-	}
-	.reflect-star--s1 {
-		width: 1px;
-		height: 1px;
-	}
-	.reflect-star--s2 {
-		width: 2px;
-		height: 2px;
-	}
-	.reflect-star--s3 {
-		width: 3px;
-		height: 3px;
-	}
-	@keyframes reflect-star-blink {
-		0%, 100% { opacity: calc(var(--brightness, 0.9) * 0.3); transform: scale(1); }
-		50% { opacity: var(--brightness, 0.9); transform: scale(1.15); }
-	}
-	.horizon-glow {
-		position: fixed;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		height: 50vh;
-		z-index: 1;
-		pointer-events: none;
-		background: linear-gradient(
-			to top,
-			rgba(0, 55, 60, 0.55) 0%,
-			rgba(0, 70, 72, 0.25) 30%,
-			rgba(0, 50, 55, 0.08) 55%,
-			transparent 85%
-		);
-	}
-	.night-silhouette {
-		position: fixed;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		height: 36vh;
-		min-height: 130px;
-		z-index: 2;
-		pointer-events: none;
-		background: #041210;
-	}
-	.silhouette-svg {
-		width: 100%;
-		height: 100%;
-		display: block;
-		object-fit: cover;
-		object-position: bottom center;
-	}
 	.track-section.holding {
 		z-index: 202;
 	}
 	/* Dark area and green bottom fade in sync with the button (blend earlier) */
-	.track-section.holding .track-below-area,
-	.track-section.holding .horizon-glow,
-	.track-section.holding .night-silhouette {
-		opacity: clamp(0, (50 - var(--hold-progress, 0)) / 45, 1);
-		transition: opacity 0.28s ease-out;
-	}
 	.track-section.holding h2,
 	.track-section.holding .section-intro,
 	.track-section.holding .error {
@@ -818,6 +682,7 @@
 		transform: scale(1);
 		/* Shape is 3/4 dome from clip-path only – no border-radius so we don’t show a full circle */
 		border-radius: 0;
+		overflow: hidden;
 		/* Blue translucent ball: pale icy blue center, deeper blue-grey at edges, sky shows through */
 		background: radial-gradient(
 			ellipse 75% 60% at 35% 30%,
@@ -847,6 +712,64 @@
 	.hold-button:active {
 		transform: scale(1);
 		opacity: 1;
+	}
+	/* Firefly inside the dome – small glow that flashes when a craving is saved */
+	.hold-button-firefly {
+		position: absolute;
+		left: 50%;
+		top: 38%;
+		width: 8px;
+		height: 8px;
+		margin-left: -4px;
+		margin-top: -4px;
+		border-radius: 50%;
+		background: rgba(255, 255, 255, 0.9);
+		box-shadow:
+			0 0 8px rgba(255, 255, 255, 0.8),
+			0 0 16px rgba(220, 240, 255, 0.6);
+		pointer-events: none;
+		opacity: 0.7;
+	}
+	.hold-button-firefly.flash {
+		animation: firefly-flash 1s ease-out forwards;
+	}
+	.hold-button-flash-overlay {
+		position: absolute;
+		inset: 0;
+		border-radius: 0;
+		background: radial-gradient(
+			ellipse 60% 50% at 50% 40%,
+			rgba(255, 255, 255, 0.5) 0%,
+			rgba(255, 255, 255, 0.2) 40%,
+			transparent 70%
+		);
+		pointer-events: none;
+		animation: firefly-flash-overlay 1s ease-out forwards;
+	}
+	@keyframes firefly-flash {
+		0% {
+			opacity: 1;
+			transform: scale(1.5);
+			box-shadow:
+				0 0 12px rgba(255, 255, 255, 1),
+				0 0 24px rgba(255, 255, 255, 0.9),
+				0 0 36px rgba(220, 240, 255, 0.8);
+		}
+		30% {
+			opacity: 1;
+			transform: scale(1.2);
+		}
+		100% {
+			opacity: 0.7;
+			transform: scale(1);
+			box-shadow:
+				0 0 8px rgba(255, 255, 255, 0.8),
+				0 0 16px rgba(220, 240, 255, 0.6);
+		}
+	}
+	@keyframes firefly-flash-overlay {
+		0% { opacity: 1; }
+		100% { opacity: 0; }
 	}
 	.error {
 		color: var(--error);
