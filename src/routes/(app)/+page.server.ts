@@ -1,4 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
+import { count, eq } from 'drizzle-orm';
 import type { Actions } from './$types';
 import type { PageServerLoad } from './$types';
 import { auth } from '$lib/server/auth';
@@ -7,8 +8,15 @@ import { craving } from '$lib/server/db/schema';
 
 const MAX_CRAVING_LENGTH = 500;
 
-export const load: PageServerLoad = async () => {
-	return {};
+export const load: PageServerLoad = async (event) => {
+	if (!event.locals.user) {
+		return {};
+	}
+	const rows = await db
+		.select({ value: count(craving.id) })
+		.from(craving)
+		.where(eq(craving.userId, event.locals.user.id));
+	return { cravingCount: Number(rows[0]?.value ?? 0) };
 };
 
 export const actions: Actions = {
@@ -30,7 +38,11 @@ export const actions: Actions = {
 			text
 		});
 		if (noRedirect) {
-			return { success: true };
+			const rows = await db
+				.select({ value: count(craving.id) })
+				.from(craving)
+				.where(eq(craving.userId, event.locals.user.id));
+			return { success: true, cravingCount: Number(rows[0]?.value ?? 0) };
 		}
 		return redirect(302, '/stats');
 	}

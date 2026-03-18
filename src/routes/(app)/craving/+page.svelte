@@ -6,11 +6,15 @@
 	let { form }: { form: ActionData } = $props();
 	let trackFormMessage = $state<string | null>(null);
 	let showWinState = $state(false);
+	let winStateExiting = $state(false);
+	let submitting = $state(false);
 
-	const WIN_STATE_DURATION_MS = 1600;
+	const WIN_STATE_DURATION_MS = 1300;
+	const WIN_STATE_FADEOUT_MS = 450;
 	const ERROR_DISPLAY_MS = 5000;
 
 	function handleResult(result: { type: string; data?: { success?: boolean; message?: string } }) {
+		submitting = false;
 		trackFormMessage = result.data?.message ?? null;
 		if (result.type === 'success' && result.data?.success) {
 			showWinState = true;
@@ -19,7 +23,8 @@
 				sessionStorage.setItem('becom-new-craving', '1');
 			}
 			setTimeout(() => {
-				window.history.back();
+				winStateExiting = true;
+				setTimeout(() => window.history.back(), WIN_STATE_FADEOUT_MS);
 			}, WIN_STATE_DURATION_MS);
 		} else if (result.type === 'failure') {
 			setTimeout(() => {
@@ -39,12 +44,15 @@
 		<form
 			method="post"
 			action="?/logCraving"
+			onsubmit={() => (submitting = true)}
 			use:enhance={() => {
 				return async ({ result }) => {
 					if (result.type === 'success' && result.data) {
 						handleResult({ type: result.type, data: result.data as { success?: boolean; message?: string } });
 					} else if (result.type === 'failure' && result.data) {
 						handleResult({ type: result.type, data: result.data as { message?: string } });
+					} else {
+						submitting = false;
 					}
 				};
 			}}
@@ -65,13 +73,15 @@
 			{#if trackFormMessage}
 				<p class="craving-error" role="alert">{trackFormMessage}</p>
 			{/if}
-			<button type="submit" class="craving-submit">Reflect it</button>
+			<button type="submit" class="craving-submit" disabled={submitting} aria-busy={submitting}>
+				{submitting ? 'Saving…' : 'Reflect it'}
+			</button>
 		</form>
 	</div>
 </div>
 
 {#if showWinState}
-	<div class="win-state" role="status" aria-live="polite">
+	<div class="win-state" class:exiting={winStateExiting} role="status" aria-live="polite">
 		<span class="win-check">✓</span>
 		<p class="win-text">Logged</p>
 	</div>
@@ -209,6 +219,11 @@
 		justify-content: center;
 		gap: 0.75rem;
 		animation: win-fade 0.3s ease;
+	}
+	.win-state.exiting {
+		opacity: 0;
+		transition: opacity 0.4s ease-out;
+		pointer-events: none;
 	}
 	@keyframes win-fade {
 		from {

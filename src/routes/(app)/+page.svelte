@@ -7,10 +7,17 @@
 	import { reflectHoldState } from '$lib/stores/reflectHold';
 	import type { ActionData } from './$types';
 
-	let { form }: { form: ActionData } = $props();
+	let { data, form }: { data: { cravingCount?: number }; form: ActionData } = $props();
 
 	/** On mobile we use tap + smooth fill; on desktop, hold. */
 	let isTouchDevice = $state(false);
+	$effect(() => {
+		const count = data?.cravingCount ?? 0;
+		if (count > 0 && fireflyCount !== count) {
+			fireflyCount = count;
+			fireflyPhase = 'idle';
+		}
+	});
 	onMount(() => {
 		isTouchDevice = typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches;
 	});
@@ -43,7 +50,8 @@
 	const HOLD_DURATION_MS = 3200;
 	/** Mobile: tap triggers white spread from button to full screen over this duration, then goto /craving */
 	const TAP_SPREAD_MS = 1200;
-	const WIN_STATE_DURATION_MS = 1600;
+	const WIN_STATE_DURATION_MS = 1300;
+	const WIN_STATE_FADEOUT_MS = 450;
 	const ERROR_DISPLAY_MS = 5000;
 	let phase = $state<'idle' | 'holding' | 'complete'>('idle');
 	let holdProgress = $state(0);
@@ -53,9 +61,50 @@
 	let holdReleaseCleanup: (() => void) | null = null;
 	let holdStartTime = 0;
 	let showWinState = $state(false);
+	let winStateExiting = $state(false);
 	let trackFormMessage = $state<string | null>(null);
+	let submitting = $state(false);
 	let hasCompletedOnce = $state(false);
 	let showFireflyFlash = $state(false);
+	/** Number of fireflies (one per craving). Capped for display. */
+	const FIREFLY_DISPLAY_MAX = 15;
+	let fireflyCount = $state(0);
+	/** Sequence: hidden → flying-in (after delay) → idle + flash */
+	let fireflyPhase = $state<'hidden' | 'flying-in' | 'idle'>('hidden');
+
+	/** Each firefly: rest position + unique drift path; different duration, direction and phase so they don't move together */
+	const fireflyPositions = $derived(
+		Array.from({ length: Math.min(fireflyCount, FIREFLY_DISPLAY_MAX) }, (_, i) => {
+			const n = Math.min(fireflyCount, FIREFLY_DISPLAY_MAX);
+			const baseAngle = (i / Math.max(n, 1)) * 2 * Math.PI - Math.PI / 2;
+			const restRadius = 6;
+			const pathRadiusX = 28;
+			const pathRadiusY = 22;
+			const seed = i * 0.97 + 0.5;
+			const a1 = seed * 2 * Math.PI;
+			const a2 = seed * 2 * Math.PI + 2.1;
+			const a3 = seed * 2 * Math.PI + 4.2;
+			// Different duration per firefly (7–14s) so they don't stay in sync
+			const duration = 7 + (i % 8) * 0.95;
+			// Reverse direction for half so they move the other way around the path
+			const reverse = i % 2 === 1;
+			// Phase offset: start each at a different point in the cycle (negative delay)
+			const phaseOffset = (i * 2.3) % 12;
+			return {
+				dx: Math.cos(baseAngle) * restRadius,
+				dy: Math.sin(baseAngle) * restRadius,
+				delay: -phaseOffset,
+				duration,
+				reverse,
+				x1: Math.round(Math.cos(a1) * pathRadiusX),
+				y1: Math.round(Math.sin(a1) * pathRadiusY),
+				x2: Math.round(Math.cos(a2) * pathRadiusX),
+				y2: Math.round(Math.sin(a2) * pathRadiusY),
+				x3: Math.round(Math.cos(a3) * pathRadiusX),
+				y3: Math.round(Math.sin(a3) * pathRadiusY)
+			};
+		})
+	);
 
 	function finishHold() {
 		if (holdIntervalId) clearInterval(holdIntervalId);
@@ -182,34 +231,72 @@
 		}
 	}
 
+	const FIREFLY_DELAY_MS = 500;
+	const FIREFLY_FLY_IN_MS = 600;
+	const FIREFLY_FLASH_MS = 1000;
+	/** Show tooltip again this long after the firefly flash ends */
+	const TOOLTIP_AFTER_FLASH_MS = 500;
+
+	/** When false, tooltip is hidden until 0.5s after firefly flash (after logging a craving). */
+	let showHoldTooltip = $state(true);
+
 	function closeWhite(fromSuccess?: boolean) {
 		phase = 'idle';
 		holdProgress = 0;
 		showWinState = false;
+		winStateExiting = false;
 		trackFormMessage = null;
 		if (fromSuccess) {
-			showFireflyFlash = true;
+			showHoldTooltip = false;
+			fireflyPhase = 'hidden';
+			// Delay, then firefly flies in
 			setTimeout(() => {
-				showFireflyFlash = false;
-			}, 1000);
+				fireflyPhase = 'flying-in';
+				// After fly-in, show flash
+				setTimeout(() => {
+					fireflyPhase = 'idle';
+					showFireflyFlash = true;
+					setTimeout(() => {
+						showFireflyFlash = false;
+						// Show tooltip and Insights badge together 0.5s after the flash
+						setTimeout(() => {
+							showHoldTooltip = true;
+							hasNewCravingForStats.set(true);
+						}, TOOLTIP_AFTER_FLASH_MS);
+					}, FIREFLY_FLASH_MS);
+				}, FIREFLY_FLY_IN_MS);
+			}, FIREFLY_DELAY_MS);
+		} else {
+			showHoldTooltip = true;
 		}
 	}
 
-	function handleTrackResult(result: { type: string; data?: { success?: boolean; message?: string } }) {
+	function handleTrackResult(result: {
+		type: string;
+		data?: { success?: boolean; message?: string; cravingCount?: number };
+	}) {
+		submitting = false;
 		trackFormMessage = result.data?.message ?? null;
 		if (result.type === 'success' && result.data?.success) {
 			showWinState = true;
-			hasNewCravingForStats.set(true);
+			if (typeof result.data.cravingCount === 'number') {
+				fireflyCount = result.data.cravingCount;
+			} else {
+				fireflyCount += 1;
+			}
 			if (typeof sessionStorage !== 'undefined') {
 				sessionStorage.setItem('becom-new-craving', '1');
 			}
 			setTimeout(() => {
-				closeWhite(true);
+				winStateExiting = true;
+				setTimeout(() => closeWhite(true), WIN_STATE_FADEOUT_MS);
 			}, WIN_STATE_DURATION_MS);
 		} else if (result.type === 'failure') {
 			setTimeout(() => {
 				closeWhite();
 			}, ERROR_DISPLAY_MS);
+		} else {
+			submitting = false;
 		}
 	}
 </script>
@@ -243,7 +330,7 @@
 			style="clip-path: url(#hold-button-drop)"
 			aria-hidden="true"
 		></div>
-			{#if phase === 'idle'}
+			{#if phase === 'idle' && showHoldTooltip}
 				<span
 					id="hold-to-log-tooltip"
 					class="hold-tooltip"
@@ -258,7 +345,7 @@
 				class:flicker={phase === 'idle'}
 				class:firefly-flash={showFireflyFlash}
 				style="clip-path: url(#hold-button-drop)"
-				aria-describedby={phase === 'idle' ? 'hold-to-log-tooltip' : undefined}
+				aria-describedby={phase === 'idle' && showHoldTooltip ? 'hold-to-log-tooltip' : undefined}
 				onpointerdown={startHold}
 				onpointerup={cancelHold}
 				onpointerleave={cancelHold}
@@ -271,11 +358,18 @@
 						{isTouchDevice ? 'Opening…' : 'Keep holding until the Reflect screen appears'}
 					</span>
 				{/if}
-				<span
-					class="hold-button-firefly"
-					class:flash={showFireflyFlash}
-					aria-hidden="true"
-				></span>
+				{#each fireflyPositions as pos, i}
+					<span
+						class="hold-button-firefly"
+						class:hidden={fireflyPhase === 'hidden'}
+						class:fly-in={fireflyPhase === 'flying-in'}
+						class:flash={showFireflyFlash}
+						class:idle={fireflyPhase === 'idle' && !showFireflyFlash}
+						style="--dx: {pos.dx}px; --dy: {pos.dy}px; --drift-delay: {pos.delay}s; --drift-duration: {pos.duration}s; --x1: {pos.x1}px; --y1: {pos.y1}px; --x2: {pos.x2}px; --y2: {pos.y2}px; --x3: {pos.x3}px; --y3: {pos.y3}px;"
+						class:drift-reverse={pos.reverse}
+						aria-hidden="true"
+					></span>
+				{/each}
 				{#if showFireflyFlash}
 					<span class="hold-button-flash-overlay" aria-hidden="true"></span>
 				{/if}
@@ -317,7 +411,7 @@
 {/if}
 
 {#if phase === 'complete'}
-	<div class="white-screen visible" role="dialog" aria-label="Reflecting on a craving">
+	<div class="white-screen visible" class:exiting={winStateExiting} class:hide-content={showWinState} role="dialog" aria-label="Reflecting on a craving">
 		<button type="button" class="close-button" onclick={closeWhite} aria-label="Close">
 			<span class="close-icon" aria-hidden="true">×</span>
 		</button>
@@ -325,12 +419,15 @@
 			<form
 				method="post"
 				action={logCravingAction}
+				onsubmit={() => (submitting = true)}
 				use:enhance={() => {
 					return async ({ result }) => {
 						if (result.type === 'success' && result.data) {
-							handleTrackResult({ type: result.type, data: result.data as { success?: boolean; message?: string } });
+							handleTrackResult({ type: result.type, data: result.data as { success?: boolean; message?: string; cravingCount?: number } });
 						} else if (result.type === 'failure' && result.data) {
 							handleTrackResult({ type: result.type, data: result.data as { message?: string } });
+						} else {
+							submitting = false;
 						}
 					};
 				}}
@@ -351,14 +448,16 @@
 				{#if trackFormMessage}
 					<p class="white-form-error" role="alert">{trackFormMessage}</p>
 				{/if}
-				<button type="submit" class="track-submit">Reflect it</button>
+				<button type="submit" class="track-submit" disabled={submitting} aria-busy={submitting}>
+					{submitting ? 'Saving…' : 'Reflect it'}
+				</button>
 			</form>
 		</div>
 	</div>
 {/if}
 
 {#if showWinState}
-	<div class="win-state" role="status" aria-live="polite">
+	<div class="win-state" class:exiting={winStateExiting} role="status" aria-live="polite">
 		<span class="win-check">✓</span>
 		<p class="win-text">Logged</p>
 	</div>
@@ -579,7 +678,8 @@
 		animation: hold-label-fade-in 0.4s ease-out forwards;
 	}
 	.hold-button-label.holding-text {
-		font-weight: 300;
+		font-size: 16px;
+		font-weight: 500;
 	}
 	.hold-button-wrap.holding .hold-button-label {
 		animation: none;
@@ -713,22 +813,64 @@
 		transform: scale(1);
 		opacity: 1;
 	}
-	/* Firefly inside the dome – small glow that flashes when a craving is saved */
+	/* Fireflies inside the dome – one per craving; each uses --dx, --dy for offset */
 	.hold-button-firefly {
 		position: absolute;
 		left: 50%;
 		top: 38%;
-		width: 8px;
-		height: 8px;
-		margin-left: -4px;
-		margin-top: -4px;
+		width: 6px;
+		height: 6px;
+		margin-left: -3px;
+		margin-top: -3px;
 		border-radius: 50%;
 		background: rgba(255, 255, 255, 0.9);
 		box-shadow:
-			0 0 8px rgba(255, 255, 255, 0.8),
-			0 0 16px rgba(220, 240, 255, 0.6);
+			0 0 6px rgba(255, 255, 255, 0.8),
+			0 0 12px rgba(220, 240, 255, 0.6);
 		pointer-events: none;
 		opacity: 0.7;
+		transform: translate(calc(-50% + var(--dx, 0px)), var(--dy, 0px));
+	}
+	/* Each firefly: own route (--x1,--y1 etc), duration (--drift-duration), phase (--drift-delay); .reverse = opposite direction */
+	.hold-button-firefly.idle {
+		animation: firefly-drift var(--drift-duration, 10s) cubic-bezier(0.45, 0, 0.55, 1) infinite;
+		animation-delay: calc(var(--drift-delay, 0) * 1s);
+	}
+	.hold-button-firefly.idle.drift-reverse {
+		animation-direction: reverse;
+	}
+	@keyframes firefly-drift {
+		0%,
+		100% {
+			transform: translate(calc(-50% + var(--dx, 0px)), var(--dy, 0px));
+		}
+		25% {
+			transform: translate(calc(-50% + var(--dx, 0px) + var(--x1, 0px)), calc(var(--dy, 0px) + var(--y1, 0px)));
+		}
+		50% {
+			transform: translate(calc(-50% + var(--dx, 0px) + var(--x2, 0px)), calc(var(--dy, 0px) + var(--y2, 0px)));
+		}
+		75% {
+			transform: translate(calc(-50% + var(--dx, 0px) + var(--x3, 0px)), calc(var(--dy, 0px) + var(--y3, 0px)));
+		}
+	}
+	.hold-button-firefly.hidden {
+		opacity: 0;
+		transform: translate(calc(-50% + var(--dx, 0px)), calc(-24px + var(--dy, 0px))) scale(0);
+		pointer-events: none;
+	}
+	.hold-button-firefly.fly-in {
+		animation: firefly-fly-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+	}
+	@keyframes firefly-fly-in {
+		from {
+			opacity: 0;
+			transform: translate(calc(-50% + var(--dx, 0px)), calc(-24px + var(--dy, 0px))) scale(0);
+		}
+		to {
+			opacity: 0.7;
+			transform: translate(calc(-50% + var(--dx, 0px)), var(--dy, 0px)) scale(1);
+		}
 	}
 	.hold-button-firefly.flash {
 		animation: firefly-flash 1s ease-out forwards;
@@ -749,22 +891,22 @@
 	@keyframes firefly-flash {
 		0% {
 			opacity: 1;
-			transform: scale(1.5);
+			transform: translate(calc(-50% + var(--dx, 0px)), var(--dy, 0px)) scale(1.5);
 			box-shadow:
-				0 0 12px rgba(255, 255, 255, 1),
-				0 0 24px rgba(255, 255, 255, 0.9),
-				0 0 36px rgba(220, 240, 255, 0.8);
+				0 0 10px rgba(255, 255, 255, 1),
+				0 0 20px rgba(255, 255, 255, 0.9),
+				0 0 28px rgba(220, 240, 255, 0.8);
 		}
 		30% {
 			opacity: 1;
-			transform: scale(1.2);
+			transform: translate(calc(-50% + var(--dx, 0px)), var(--dy, 0px)) scale(1.2);
 		}
 		100% {
 			opacity: 0.7;
-			transform: scale(1);
+			transform: translate(calc(-50% + var(--dx, 0px)), var(--dy, 0px)) scale(1);
 			box-shadow:
-				0 0 8px rgba(255, 255, 255, 0.8),
-				0 0 16px rgba(220, 240, 255, 0.6);
+				0 0 6px rgba(255, 255, 255, 0.8),
+				0 0 12px rgba(220, 240, 255, 0.6);
 		}
 	}
 	@keyframes firefly-flash-overlay {
@@ -850,6 +992,19 @@
 	}
 	.white-screen.visible {
 		opacity: 1;
+	}
+	.white-screen.visible.exiting {
+		opacity: 0;
+		transition: opacity 0.4s ease-out;
+		pointer-events: none;
+	}
+	/* Hide form as soon as "Logged" is shown so it never flashes again during fade-out */
+	.white-screen.visible.hide-content .white-screen-content,
+	.white-screen.visible.hide-content .close-button {
+		opacity: 0;
+		visibility: hidden;
+		pointer-events: none;
+		transition: opacity 0.15s ease-out, visibility 0.15s ease-out;
 	}
 	.white-screen.visible .close-button {
 		animation: white-screen-in 0.4s ease-out 0.15s both;
@@ -955,17 +1110,23 @@
 	.track-submit:hover {
 		opacity: 0.9;
 	}
+	/* Above .white-screen so "Logged" is visible on top of the form overlay */
 	.win-state {
 		position: fixed;
 		inset: 0;
 		background: #fff;
-		z-index: 220;
+		z-index: 2147483648;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
 		gap: 0.75rem;
 		animation: win-fade 0.3s ease;
+	}
+	.win-state.exiting {
+		opacity: 0;
+		transition: opacity 0.4s ease-out;
+		pointer-events: none;
 	}
 	@keyframes win-fade {
 		from { opacity: 0; }
