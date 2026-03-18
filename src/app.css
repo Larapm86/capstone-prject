@@ -12,6 +12,26 @@
 	--input-border: rgba(19, 64, 110, 0.6);
 	--input-focus-border: rgba(255, 255, 255, 0.25);
 	--error: #f87171;
+	/* Island tile (Me map) – aligned with app blues */
+	--island-top: #2580c4;
+	--island-side: #134070;
+	--island-side-dark: #0d3560;
+	/* Current level: same blue touch as Hold to log button, less transparent */
+	--island-current-top: #b8d4f5;
+	--island-current-side: #8bb0dc;
+	--island-current-side-dark: #6b96c4;
+	--island-completed-top: #1e5a8a;
+	--island-completed-side: #0d3560;
+	--island-completed-side-dark: #0a2640;
+	--island-locked-top: #5a7a94;
+	--island-locked-side: #4a5f75;
+	--island-locked-side-dark: #3d5266;
+	--island-shade-light: rgba(0, 0, 0, 0.08);
+	--island-shade-medium: rgba(0, 0, 0, 0.18);
+	--island-badge-bg: rgba(13, 53, 96, 0.95);
+	--island-badge-locked-bg: rgba(19, 64, 110, 0.7);
+	--island-progress-fill: #60a5fa;
+	--island-progress-track: rgba(255, 255, 255, 0.14);
 }
 
 *,
@@ -38,6 +58,18 @@ body {
 	font-weight: 300;
 	background: var(--bg);
 	color: var(--text);
+}
+
+@media (min-width: 768px) {
+	html {
+		overflow-y: auto;
+	}
+	body {
+		height: auto;
+		min-height: 100%;
+		max-height: none;
+		overflow-y: auto;
+	}
 }
 
 h1, h2, h3, h4, h5, h6 {

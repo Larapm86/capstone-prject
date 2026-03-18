@@ -1,20 +1,22 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
+	import CravingForm from '$lib/components/craving-form/CravingForm.svelte';
 	import { hasNewCravingForStats } from '$lib/stores/newCraving';
-	import type { ActionData } from './$types';
+	import { levelOverride } from '$lib/stores/levelOverride';
+	import type { ActionData, PageData } from './$types';
 
-	let { form }: { form: ActionData } = $props();
+	let { data, form }: { data: PageData; form: ActionData } = $props();
 	let trackFormMessage = $state<string | null>(null);
 	let showWinState = $state(false);
 	let winStateExiting = $state(false);
 	let submitting = $state(false);
+
+	const level = $derived($levelOverride ?? data?.level ?? 1);
 
 	const WIN_STATE_DURATION_MS = 1300;
 	const WIN_STATE_FADEOUT_MS = 450;
 	const ERROR_DISPLAY_MS = 5000;
 
 	function handleResult(result: { type: string; data?: { success?: boolean; message?: string } }) {
-		submitting = false;
 		trackFormMessage = result.data?.message ?? null;
 		if (result.type === 'success' && result.data?.success) {
 			showWinState = true;
@@ -41,42 +43,15 @@
 <div class="craving-page craving-page--enter">
 	<a href="/" class="close-link" aria-label="Back to Reflect">×</a>
 	<div class="craving-content">
-		<form
-			method="post"
+		<CravingForm
+			level={level}
 			action="?/logCraving"
-			onsubmit={() => (submitting = true)}
-			use:enhance={() => {
-				return async ({ result }) => {
-					if (result.type === 'success' && result.data) {
-						handleResult({ type: result.type, data: result.data as { success?: boolean; message?: string } });
-					} else if (result.type === 'failure' && result.data) {
-						handleResult({ type: result.type, data: result.data as { message?: string } });
-					} else {
-						submitting = false;
-					}
-				};
-			}}
-			class="craving-form"
-		>
-			<input type="hidden" name="noRedirect" value="1" />
-			<label for="craving-text" class="craving-label">What are you craving?</label>
-			<input
-				id="craving-text"
-				type="text"
-				name="text"
-				placeholder="e.g. chocolate, chips"
-				inputmode="text"
-				autocomplete="off"
-				maxlength={500}
-				class="craving-input"
-			/>
-			{#if trackFormMessage}
-				<p class="craving-error" role="alert">{trackFormMessage}</p>
-			{/if}
-			<button type="submit" class="craving-submit" disabled={submitting} aria-busy={submitting}>
-				{submitting ? 'Saving…' : 'Reflect it'}
-			</button>
-		</form>
+			noRedirect={true}
+			submitLabel="Reflect it"
+			bind:submitting
+			errorMessage={trackFormMessage}
+			onResult={(result) => handleResult(result as { type: string; data?: { success?: boolean; message?: string } })}
+		/>
 	</div>
 </div>
 
@@ -95,10 +70,10 @@
 		display: flex;
 		flex-direction: column;
 		align-items: stretch;
-		padding: 1rem;
+		padding: 1rem 1.25rem;
 		padding-top: calc(1rem + env(safe-area-inset-top, 0px));
-		padding-right: calc(1rem + env(safe-area-inset-right, 0px));
-		padding-left: calc(1rem + env(safe-area-inset-left, 0px));
+		padding-right: calc(1.25rem + env(safe-area-inset-right, 0px));
+		padding-left: calc(1.25rem + env(safe-area-inset-left, 0px));
 		padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
 	}
 	/* Smooth entrance on mobile */
@@ -116,17 +91,8 @@
 	.craving-page--enter .close-link {
 		animation: craving-item-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
 	}
-	.craving-page--enter .craving-label {
+	.craving-page--enter .craving-content {
 		animation: craving-item-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.14s both;
-	}
-	.craving-page--enter .craving-input {
-		animation: craving-item-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.22s both;
-	}
-	.craving-page--enter .craving-error {
-		animation: craving-item-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.26s both;
-	}
-	.craving-page--enter .craving-submit {
-		animation: craving-item-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
 	}
 	@keyframes craving-item-in {
 		from {
@@ -160,53 +126,21 @@
 	.craving-content {
 		flex: 1;
 		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 2rem 0;
-	}
-	.craving-form {
-		width: 100%;
-		max-width: 24rem;
-		display: flex;
 		flex-direction: column;
-		gap: 1rem;
+		align-items: center;
+		justify-content: flex-start;
+		padding: 1rem 0 2rem;
+		min-height: 0;
+		width: 100%;
+		max-width: 22rem;
+		margin: 0 auto;
+		box-sizing: border-box;
 	}
-	.craving-label {
-		font-size: 1rem;
-		font-weight: 600;
-		color: #011f3b;
-	}
-	.craving-input {
-		font-size: 16px;
-		padding: 0.875rem 1rem;
-		background: rgba(1, 31, 59, 0.06);
-		color: #011f3b;
-		border: 1px solid rgba(1, 31, 59, 0.2);
-		border-radius: 0.75rem;
-		font-family: var(--font-sans);
-	}
-	.craving-input::placeholder {
-		color: rgba(1, 31, 59, 0.5);
-	}
-	.craving-error {
-		color: #c00;
-		font-size: 0.875rem;
-		margin: 0;
-	}
-	.craving-submit {
-		min-height: var(--min-touch);
-		padding: 0.75rem 1.5rem;
-		background: #011f3b;
-		color: #fff;
-		border: none;
-		border-radius: 0.75rem;
-		font-family: var(--font-sans);
-		font-weight: 600;
-		font-size: 1rem;
-		cursor: pointer;
-	}
-	.craving-submit:hover {
-		opacity: 0.95;
+	.craving-content :global(.craving-form-inner) {
+		width: 100%;
+		max-width: 100%;
+		flex: 1;
+		min-height: 0;
 	}
 	.win-state {
 		position: fixed;

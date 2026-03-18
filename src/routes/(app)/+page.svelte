@@ -1,13 +1,15 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { enhance } from '$app/forms';
-	import { onMount } from 'svelte';
+	import CravingForm from '$lib/components/craving-form/CravingForm.svelte';
 	import { hasNewCravingForStats } from '$lib/stores/newCraving';
+	import { levelOverride } from '$lib/stores/levelOverride';
 	import { reflectHoldState } from '$lib/stores/reflectHold';
 	import type { ActionData } from './$types';
 
-	let { data, form }: { data: { cravingCount?: number }; form: ActionData } = $props();
+	let { data, form }: { data: { level?: number; cravingCount?: number }; form: ActionData } = $props();
+	const level = $derived($levelOverride ?? data?.level ?? 1);
 
 	/** On mobile we use tap + smooth fill; on desktop, hold. */
 	let isTouchDevice = $state(false);
@@ -416,42 +418,15 @@
 			<span class="close-icon" aria-hidden="true">×</span>
 		</button>
 		<div class="white-screen-content">
-			<form
-				method="post"
+			<CravingForm
+				level={level}
 				action={logCravingAction}
-				onsubmit={() => (submitting = true)}
-				use:enhance={() => {
-					return async ({ result }) => {
-						if (result.type === 'success' && result.data) {
-							handleTrackResult({ type: result.type, data: result.data as { success?: boolean; message?: string; cravingCount?: number } });
-						} else if (result.type === 'failure' && result.data) {
-							handleTrackResult({ type: result.type, data: result.data as { message?: string } });
-						} else {
-							submitting = false;
-						}
-					};
-				}}
-				class="track-form"
-			>
-				<input type="hidden" name="noRedirect" value="1" />
-				<label for="white-craving-text" class="white-label">What are you craving?</label>
-				<input
-					id="white-craving-text"
-					type="text"
-					name="text"
-					placeholder="e.g. chocolate, chips"
-					inputmode="text"
-					autocomplete="off"
-					maxlength={500}
-					class="white-input"
-				/>
-				{#if trackFormMessage}
-					<p class="white-form-error" role="alert">{trackFormMessage}</p>
-				{/if}
-				<button type="submit" class="track-submit" disabled={submitting} aria-busy={submitting}>
-					{submitting ? 'Saving…' : 'Reflect it'}
-				</button>
-			</form>
+				noRedirect={true}
+				submitLabel="Reflect it"
+				bind:submitting
+				errorMessage={trackFormMessage}
+				onResult={(result) => handleTrackResult(result as { type: string; data?: { success?: boolean; message?: string; cravingCount?: number } })}
+			/>
 		</div>
 	</div>
 {/if}
@@ -1009,17 +984,8 @@
 	.white-screen.visible .close-button {
 		animation: white-screen-in 0.4s ease-out 0.15s both;
 	}
-	.white-screen.visible .white-label {
+	.white-screen.visible .white-screen-content {
 		animation: white-screen-in 0.4s ease-out 0.25s both;
-	}
-	.white-screen.visible .white-input {
-		animation: white-screen-in 0.4s ease-out 0.35s both;
-	}
-	.white-screen.visible .track-submit {
-		animation: white-screen-in 0.4s ease-out 0.45s both;
-	}
-	.white-screen.visible .white-form-error {
-		animation: white-screen-in 0.3s ease-out 0.4s both;
 	}
 	@keyframes white-screen-in {
 		from {
@@ -1059,56 +1025,20 @@
 	.white-screen-content {
 		flex: 1;
 		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 2rem 0;
-	}
-	.track-form {
-		width: 100%;
-		max-width: 24rem;
-		display: flex;
 		flex-direction: column;
-		gap: 1rem;
+		align-items: center;
+		padding: 1rem 1.25rem 2rem;
+		padding-left: calc(1.25rem + env(safe-area-inset-left, 0px));
+		padding-right: calc(1.25rem + env(safe-area-inset-right, 0px));
+		width: 100%;
+		min-height: 0;
+		box-sizing: border-box;
 	}
-	.white-label {
-		font-size: 1rem;
-		font-weight: 600;
-		color: #011F3B;
-		opacity: 0;
-	}
-	.white-input {
-		font-size: 16px;
-		padding: 0.875rem 1rem;
-		background: rgba(1, 31, 59, 0.06);
-		color: #011F3B;
-		border: 1px solid rgba(1, 31, 59, 0.2);
-		border-radius: 0.75rem;
-		font-family: var(--font-sans);
-		opacity: 0;
-	}
-	.white-input::placeholder {
-		color: rgba(1, 31, 59, 0.5);
-	}
-	.white-form-error {
-		color: #c00;
-		font-size: 0.875rem;
-		margin: 0;
-	}
-	.track-submit {
-		min-height: var(--min-touch);
-		padding: 0.75rem 1.5rem;
-		background: #011F3B;
-		color: #fff;
-		border: none;
-		border-radius: 0.75rem;
-		font-family: var(--font-sans);
-		font-weight: 600;
-		font-size: 1rem;
-		cursor: pointer;
-		opacity: 0;
-	}
-	.track-submit:hover {
-		opacity: 0.9;
+	.white-screen-content :global(.craving-form-inner) {
+		flex: 1;
+		min-height: 0;
+		width: 100%;
+		max-width: 20rem;
 	}
 	/* Above .white-screen so "Logged" is visible on top of the form overlay */
 	.win-state {
