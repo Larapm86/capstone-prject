@@ -87,8 +87,8 @@
 					<img
 						src="/icons/nav/icon_{item.icon}_{$page.url.pathname === item.path ? 'selected' : 'unselected'}.svg"
 						alt=""
-						width="32"
-						height="32"
+						width="24"
+						height="24"
 						class="nav-icon-img"
 					/>
 				</span>
@@ -247,12 +247,11 @@
 		left: 50%;
 		transform: translateX(-50%);
 		width: calc(100% - 2rem);
-		max-width: var(--max-width);
+		max-width: 400px;
 		display: flex;
 		align-items: stretch;
-		justify-content: space-around;
-		gap: 0.25rem;
-		padding: 0.5rem;
+		justify-content: space-between;
+		padding: 8px 32px;
 		background: rgba(45, 50, 60, 0.4);
 		backdrop-filter: blur(20px) saturate(1.2);
 		-webkit-backdrop-filter: blur(20px) saturate(1.2);
@@ -266,18 +265,17 @@
 		min-height: 0;
 	}
 	.nav-item {
-		flex: 1;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
 		gap: 0;
 		min-height: var(--min-touch);
-		padding: 0.5rem 0.25rem;
+		padding: 2px 4px;
 		color: rgba(255, 255, 255, 0.55);
 		text-decoration: none;
 		font-weight: 500;
-		font-size: 0.9375rem;
+		font-size: 14px;
 		border-radius: 0.5rem;
 		transition: color 0.32s ease-out, font-weight 0.28s ease-out, transform 0.25s ease-out;
 	}
@@ -293,8 +291,8 @@
 	}
 	.nav-icon-img {
 		display: block;
-		width: 32px;
-		height: 32px;
+		width: 24px;
+		height: 24px;
 		flex-shrink: 0;
 	}
 	.nav-item:hover {
@@ -303,12 +301,6 @@
 	.nav-item.active {
 		color: #ffffff;
 		font-weight: 600;
-	}
-	.nav-item:first-child {
-		border-radius: 9999px 0 0 9999px;
-	}
-	.nav-item:last-child {
-		border-radius: 0 9999px 9999px 0;
 	}
 	.nav-label {
 		white-space: nowrap;
@@ -330,5 +322,11 @@
 	}
 	.nav-item:last-child .nav-badge {
 		right: 0.35rem;
+	}
+	@media (min-width: 768px) {
+		.nav-icon-img {
+			width: 32px;
+			height: 32px;
+		}
 	}
 </style>

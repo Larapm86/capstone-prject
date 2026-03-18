@@ -699,13 +699,12 @@
 	.hold-button-halo {
 		position: absolute;
 		inset: 0;
-		/* Same 3/4 shape from clip-path; no border-radius so dome shows */
-		background: rgba(235, 242, 255, 0.05);
+		/* Same 3/4 shape from clip-path; soft blue glow so ball has fuzzy luminous edge */
+		background: transparent;
 		border-radius: 0;
-		filter: drop-shadow(0 0 16px rgba(220, 235, 255, 0.5))
-			drop-shadow(0 0 36px rgba(210, 228, 255, 0.35))
-			drop-shadow(0 0 56px rgba(200, 220, 255, 0.22))
-			drop-shadow(0 0 80px rgba(190, 212, 255, 0.12));
+		filter: drop-shadow(0 0 20px rgba(180, 210, 255, 0.45))
+			drop-shadow(0 0 40px rgba(160, 195, 240, 0.3))
+			drop-shadow(0 0 60px rgba(140, 180, 230, 0.2));
 		pointer-events: none;
 	}
 	.hold-button-halo.flicker {
@@ -714,33 +713,33 @@
 	.hold-button.flicker {
 		animation: fluorescent-flicker 4.5s ease-in-out infinite;
 	}
-	/* Glossy: soft specular + streak + rim – transparent so sky shows through */
+	/* Glossy: prominent upper-left oval highlight + bright horizontal glow at bottom */
 	.hold-button::after {
 		content: '';
 		position: absolute;
 		inset: 0;
 		border-radius: 0;
 		background:
+			/* Elongated oval highlight, upper-left – glossy reflection */
 			radial-gradient(
-				ellipse 70% 45% at 22% 14%,
-				rgba(255, 255, 255, 0.65) 0%,
-				rgba(255, 255, 255, 0.45) 20%,
-				rgba(248, 252, 255, 0.2) 45%,
-				transparent 65%
+				ellipse 55% 28% at 20% 18%,
+				rgba(255, 255, 255, 0.85) 0%,
+				rgba(235, 245, 255, 0.5) 35%,
+				rgba(210, 228, 255, 0.2) 55%,
+				transparent 75%
 			),
+			/* Bright horizontal glow at bottom where ball meets ground */
 			linear-gradient(
-				135deg,
-				rgba(255, 255, 255, 0.22) 0%,
-				transparent 25%
-			),
-			radial-gradient(
-				ellipse 120% 60% at 50% -10%,
-				rgba(255, 255, 255, 0.12) 0%,
-				transparent 50%
+				to top,
+				transparent 0%,
+				transparent 45%,
+				rgba(255, 255, 255, 0.35) 70%,
+				rgba(255, 255, 255, 0.5) 85%,
+				rgba(255, 255, 255, 0.4) 100%
 			);
 		pointer-events: none;
 	}
-	/* Moving light inside – visible but translucent */
+	/* Soft inner glow – blue-tinted, translucent */
 	.hold-button.flicker::before {
 		content: '';
 		position: absolute;
@@ -748,9 +747,9 @@
 		border-radius: 50%;
 		background: radial-gradient(
 			ellipse 75% 65% at 50% 50%,
-			rgba(255, 255, 255, 0.5) 0%,
-			rgba(248, 252, 255, 0.28) 35%,
-			rgba(235, 245, 255, 0.1) 60%,
+			rgba(235, 248, 255, 0.4) 0%,
+			rgba(210, 230, 255, 0.22) 35%,
+			rgba(190, 215, 248, 0.08) 60%,
 			transparent 85%
 		);
 		animation: light-drift 12s ease-in-out infinite;
@@ -787,24 +786,24 @@
 		transform: scale(1);
 		/* Shape is 3/4 dome from clip-path only – no border-radius so we don’t show a full circle */
 		border-radius: 0;
-		/* Ethereal orb: pale blue-white, more transparent so sky shows through */
+		/* Blue translucent ball: pale icy blue center, deeper blue-grey at edges, sky shows through */
 		background: radial-gradient(
-			ellipse 70% 55% at 28% 22%,
-			rgba(248, 252, 255, 0.62),
-			rgba(238, 245, 255, 0.55) 35%,
-			rgba(228, 238, 252, 0.48) 70%,
-			rgba(218, 232, 250, 0.42) 100%
+			ellipse 75% 60% at 35% 30%,
+			rgba(220, 238, 255, 0.75) 0%,
+			rgba(200, 222, 248, 0.6) 30%,
+			rgba(175, 205, 240, 0.45) 55%,
+			rgba(150, 185, 225, 0.3) 75%,
+			rgba(120, 160, 210, 0.2) 100%
 		);
 		color: #0a0c14;
 		border: none;
 		box-shadow:
-			0 0 24px rgba(220, 235, 255, 0.4),
-			0 0 48px rgba(210, 228, 255, 0.2),
-			inset -0.7rem -0.7rem 2.2rem rgba(150, 175, 215, 0.2),
-			inset 0.55rem 0.5rem 1.6rem rgba(255, 255, 255, 0.55),
-			inset 0.25rem 0.25rem 0.7rem rgba(255, 255, 255, 0.6),
-			inset -0.2rem -0.2rem 0.5rem rgba(170, 195, 240, 0.15),
-			inset 0 0.35rem 0.8rem rgba(255, 255, 255, 0.35);
+			0 0 28px rgba(180, 210, 255, 0.35),
+			0 0 56px rgba(160, 195, 240, 0.2),
+			inset -0.6rem -0.6rem 2rem rgba(100, 140, 200, 0.25),
+			inset 0.5rem 0.45rem 1.4rem rgba(255, 255, 255, 0.5),
+			inset 0.2rem 0.2rem 0.6rem rgba(255, 255, 255, 0.6),
+			inset 0 0.5rem 1.2rem rgba(255, 255, 255, 0.4);
 		font-family: var(--font-sans);
 		font-weight: 600;
 		cursor: pointer;
