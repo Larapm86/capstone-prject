@@ -194,8 +194,8 @@
 		right: 0;
 		bottom: 0;
 		width: 100%;
-		height: 54vh;
-		min-height: 200px;
+		height: 28vh;
+		min-height: 100px;
 		z-index: 1;
 		overflow: hidden;
 		clip-path: polygon(
@@ -240,7 +240,7 @@
 		left: 0;
 		right: 0;
 		bottom: 0;
-		height: 50vh;
+		height: 34vh;
 		z-index: 1;
 		background: linear-gradient(to top, rgba(0, 55, 60, 0.55) 0%, rgba(0, 70, 72, 0.25) 30%, rgba(0, 50, 55, 0.08) 55%, transparent 85%);
 	}

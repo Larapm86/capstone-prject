@@ -783,24 +783,24 @@
 		/* Shape is 3/4 dome from clip-path only – no border-radius so we don’t show a full circle */
 		border-radius: 0;
 		overflow: hidden;
-		/* Blue translucent ball: pale icy blue center, deeper blue-grey at edges, sky shows through */
+		/* Blue translucent ball: more transparent so sky shows through */
 		background: radial-gradient(
 			ellipse 75% 60% at 35% 30%,
-			rgba(220, 238, 255, 0.75) 0%,
-			rgba(200, 222, 248, 0.6) 30%,
-			rgba(175, 205, 240, 0.45) 55%,
-			rgba(150, 185, 225, 0.3) 75%,
-			rgba(120, 160, 210, 0.2) 100%
+			rgba(220, 238, 255, 0.42) 0%,
+			rgba(200, 222, 248, 0.35) 30%,
+			rgba(175, 205, 240, 0.26) 55%,
+			rgba(150, 185, 225, 0.18) 75%,
+			rgba(120, 160, 210, 0.12) 100%
 		);
 		color: #0a0c14;
 		border: none;
 		box-shadow:
-			0 0 28px rgba(180, 210, 255, 0.35),
-			0 0 56px rgba(160, 195, 240, 0.2),
-			inset -0.6rem -0.6rem 2rem rgba(100, 140, 200, 0.25),
-			inset 0.5rem 0.45rem 1.4rem rgba(255, 255, 255, 0.5),
-			inset 0.2rem 0.2rem 0.6rem rgba(255, 255, 255, 0.6),
-			inset 0 0.5rem 1.2rem rgba(255, 255, 255, 0.4);
+			0 0 28px rgba(180, 210, 255, 0.28),
+			0 0 56px rgba(160, 195, 240, 0.15),
+			inset -0.6rem -0.6rem 2rem rgba(100, 140, 200, 0.14),
+			inset 0.5rem 0.45rem 1.4rem rgba(255, 255, 255, 0.28),
+			inset 0.2rem 0.2rem 0.6rem rgba(255, 255, 255, 0.35),
+			inset 0 0.5rem 1.2rem rgba(255, 255, 255, 0.22);
 		font-family: var(--font-sans);
 		font-weight: 600;
 		cursor: pointer;
