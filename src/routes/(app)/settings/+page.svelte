@@ -10,6 +10,24 @@
 	const progressPercent = $derived(
 		progress.required > 0 ? Math.min(100, (progress.current / progress.required) * 100) : 0
 	);
+
+	let carouselEl: HTMLDivElement;
+	let activeIndex = $state(0);
+
+	function onCarouselScroll() {
+		if (!carouselEl) return;
+		const cardWidth = carouselEl.offsetWidth;
+		const scrollLeft = carouselEl.scrollLeft;
+		const index = Math.round(scrollLeft / cardWidth);
+		activeIndex = Math.min(Math.max(0, index), SKILLS.length - 1);
+	}
+
+	function goToSlide(index: number) {
+		if (!carouselEl) return;
+		const cardWidth = carouselEl.offsetWidth;
+		carouselEl.scrollTo({ left: index * cardWidth, behavior: 'smooth' });
+		activeIndex = index;
+	}
 </script>
 
 <svelte:head>
@@ -20,118 +38,108 @@
 	<h1 id="me-heading" class="page-title me-title">Me</h1>
 	<p class="me-subtitle">Your journey</p>
 
-	<div class="map-perspective" role="list" aria-label="Skills progression map">
-		{#each SKILLS as skill}
-			{@const isCompleted = skill.level < level}
-			{@const isCurrent = skill.level === level}
-			{@const isLocked = skill.level > level}
-			<article
-				class="map-node"
-				class:node--completed={isCompleted}
-				class:node--current={isCurrent}
-				class:node--locked={isLocked}
-				class:node--alt={skill.level % 2 === 0}
-				role="listitem"
-				aria-current={isCurrent ? 'step' : undefined}
-				aria-label="Level {skill.level}: {skill.name}{isLocked ? ' (locked)' : ''}{isCurrent ? '. Current level.' : ''}"
-			>
-				<div class="node-spacer"></div>
-				<div class="island-cell">
-					<div
-						class="island"
-						tabindex="{isLocked ? -1 : 0}"
-					>
-						<!-- Badge with optional progress ring around number -->
-						<div class="island-badge-wrap" aria-hidden="true">
-							{#if !isLocked}
-								<div
-									class="island-badge-ring"
-									role="progressbar"
-									aria-valuenow={isCurrent ? progress.current : progress.required}
-									aria-valuemin={0}
-									aria-valuemax={progress.required}
-									aria-label="{isCurrent ? progress.label + ': ' + progress.current + ' of ' + progress.required : 'Completed'}"
-									style="--progress: {isCompleted ? 100 : progressPercent}"
-								></div>
-							{/if}
-							<div class="island-badge">
-								{#if isLocked}
-									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-										<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-										<path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-									</svg>
-								{:else}
-									<span class="island-badge__num">{skill.level}</span>
-								{/if}
+	<div class="carousel-outer">
+		<div
+			class="carousel"
+			role="list"
+			aria-label="Skills progression"
+			bind:this={carouselEl}
+			onscroll={onCarouselScroll}
+		>
+			{#each SKILLS as skill, i}
+				{@const isCompleted = skill.level < level}
+				{@const isCurrent = skill.level === level}
+				{@const isLocked = skill.level > level}
+				<article
+					class="carousel-card map-node"
+					class:node--completed={isCompleted}
+					class:node--current={isCurrent}
+					class:node--locked={isLocked}
+					role="listitem"
+					aria-current={isCurrent ? 'step' : undefined}
+					aria-label="Skill {skill.level}: {skill.name}{isLocked ? ' (locked)' : ''}{isCurrent ? '. Current skill.' : ''}"
+				>
+					<!-- Island on top of card -->
+					<div class="carousel-card__island">
+						<div
+							class="island"
+							tabindex="{isLocked ? -1 : 0}"
+						>
+							<div class="island-badge-wrap" aria-hidden="true">
+								<div class="island-badge">
+									{#if isLocked}
+										<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+											<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+											<path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+										</svg>
+									{:else}
+										<span class="island-badge__num">{skill.level}</span>
+									{/if}
+								</div>
 							</div>
-						</div>
-						<!-- Isometric tile: single SVG, seamless joins (paths from reference) -->
-						<div class="island__block">
-							<svg
-								class="island__tile"
-								viewBox="0 0 170.004 160"
-								fill="none"
-								preserveAspectRatio="xMidYMid meet"
-								aria-hidden="true"
-							>
-								<g>
-									<!-- Top face (lighter) -->
-									<path
-										d="M167.983 46.6236L89.7354 1.33516C86.6521 -0.449418 82.8659 -0.444754 79.7869 1.34741L2.0082 46.6186C0.666493 47.3995 -0.00279171 48.7714 8.7518e-06 50.1421C0.0028008 51.5086 0.673645 52.8739 2.01221 53.6509L37.8067 74.4295L51.5274 82.3943L80.0337 98.9421C81.5745 99.8365 83.2915 100.284 85.0085 100.284C86.7256 100.284 88.4426 99.8365 89.9833 98.9421L132.092 74.498L167.988 53.6608C169.327 52.8833 169.998 51.5172 170 50.1502C170 50.1475 170 50.1448 170 50.1421C170 48.7716 169.327 47.4014 167.983 46.6236Z"
-										fill="var(--island-top)"
-									/>
-									<!-- Left side + subtle shade -->
-									<path
-										clip-rule="evenodd"
-										fill-rule="evenodd"
-										d="M0.00630481 89.0568L8.7518e-06 98.7724V70.9436C0.0028008 72.3101 0.673645 73.6754 2.01221 74.4524L37.8067 95.231L51.5274 103.196L80.0337 119.744C81.5745 120.638 83.2915 121.085 85.0085 121.085V100.284C83.2915 100.284 81.5745 99.8365 80.0337 98.9421L51.5274 82.3943L37.8067 74.4295L2.01221 53.6509C0.673645 52.8739 0.0028008 51.5086 8.7518e-06 50.1421V70.9436L0.00630481 109.841V89.0568Z"
-										fill="var(--island-side)"
-									/>
-									<path
-										clip-rule="evenodd"
-										fill-rule="evenodd"
-										d="M0.00630481 89.0568L8.7518e-06 98.7724V70.9436C0.0028008 72.3101 0.673645 73.6754 2.01221 74.4524L37.8067 95.231L51.5274 103.196L80.0337 119.744C81.5745 120.638 83.2915 121.085 85.0085 121.085V100.284C83.2915 100.284 81.5745 99.8365 80.0337 98.9421L51.5274 82.3943L37.8067 74.4295L2.01221 53.6509C0.673645 52.8739 0.0028008 51.5086 8.7518e-06 50.1421V70.9436L0.00630481 109.841V89.0568Z"
-										fill="var(--island-shade-light)"
-									/>
-									<!-- Right side + shade -->
-									<path
-										d="M89.9833 98.9421C88.4426 99.8365 86.7256 100.284 85.0085 100.284L85.0119 121.085C86.7278 121.085 88.4436 120.637 89.9833 119.744L132.092 95.2995L167.988 74.4623C169.221 73.7465 169.887 72.5318 169.987 71.2768L170 50.1502C169.998 51.5172 169.327 52.8833 167.988 53.6608L132.092 74.498L89.9833 98.9421Z"
-										fill="var(--island-side)"
-									/>
-									<path
-										d="M89.9833 98.9421C88.4426 99.8365 86.7256 100.284 85.0085 100.284L85.0119 121.085C86.7278 121.085 88.4436 120.637 89.9833 119.744L132.092 95.2995L167.988 74.4623C169.221 73.7465 169.887 72.5318 169.987 71.2768L170 50.1502C169.998 51.5172 169.327 52.8833 167.988 53.6608L132.092 74.498L89.9833 98.9421Z"
-										fill="var(--island-shade-medium)"
-									/>
-									<!-- Front faces (darker) -->
-									<path
-										d="M2.0185 113.367L80.04 158.658C81.5807 159.553 83.2978 160 85.0148 160L85.0085 121.085C83.2915 121.085 81.5745 120.638 80.0337 119.744L51.5274 103.196L37.8067 95.231L2.01221 74.4524C0.673645 73.6754 0.0028008 72.3101 8.7518e-06 70.9436L0.00630481 89.0568V109.841C0.00350103 111.213 0.674347 112.587 2.0185 113.367Z"
-										fill="var(--island-side-dark)"
-									/>
-									<path
-										d="M89.9896 158.658L167.994 113.377C169.17 112.694 169.831 111.558 169.976 110.365L169.976 109.36L169.983 97.8858C169.98 98.179 169.975 98.3324 169.97 98.2909L169.975 89.5656L169.987 71.2768C169.887 72.5318 169.221 73.7465 167.988 74.4623L132.092 95.2995L89.9833 119.744C88.4436 120.637 86.7278 121.085 85.0119 121.085L85.0148 139.198V160C86.7318 160 88.4489 159.553 89.9896 158.658Z"
-										fill="var(--island-side-dark)"
-									/>
-									<path
-										d="M89.9896 158.658L167.994 113.377C169.17 112.694 169.831 111.558 169.976 110.365L169.976 109.36L169.983 97.8858C169.98 98.179 169.975 98.3324 169.97 98.2909L169.975 89.5656L169.987 71.2768C169.887 72.5318 169.221 73.7465 167.988 74.4623L132.092 95.2995L89.9833 119.744C88.4436 120.637 86.7278 121.085 85.0119 121.085L85.0148 139.198V160C86.7318 160 88.4489 159.553 89.9896 158.658Z"
-										fill="var(--island-shade-medium)"
-									/>
-								</g>
-							</svg>
-							<!-- Content on top face (locked message only) -->
-							<div class="island__top-content">
-								{#if isLocked}
-									<p class="island__locked-label">Complete previous levels to unlock</p>
-								{/if}
+							<div class="island__block">
+								<svg
+									class="island__tile"
+									viewBox="0 0 170.004 160"
+									fill="none"
+									preserveAspectRatio="xMidYMid meet"
+									aria-hidden="true"
+								>
+									<g>
+										<path d="M167.983 46.6236L89.7354 1.33516C86.6521 -0.449418 82.8659 -0.444754 79.7869 1.34741L2.0082 46.6186C0.666493 47.3995 -0.00279171 48.7714 8.7518e-06 50.1421C0.0028008 51.5086 0.673645 52.8739 2.01221 53.6509L37.8067 74.4295L51.5274 82.3943L80.0337 98.9421C81.5745 99.8365 83.2915 100.284 85.0085 100.284C86.7256 100.284 88.4426 99.8365 89.9833 98.9421L132.092 74.498L167.988 53.6608C169.327 52.8833 169.998 51.5172 170 50.1502C170 50.1475 170 50.1448 170 50.1421C170 48.7716 169.327 47.4014 167.983 46.6236Z" fill="var(--island-top)"/>
+										<path clip-rule="evenodd" fill-rule="evenodd" d="M0.00630481 89.0568L8.7518e-06 98.7724V70.9436C0.0028008 72.3101 0.673645 73.6754 2.01221 74.4524L37.8067 95.231L51.5274 103.196L80.0337 119.744C81.5745 120.638 83.2915 121.085 85.0085 121.085V100.284C83.2915 100.284 81.5745 99.8365 80.0337 98.9421L51.5274 82.3943L37.8067 74.4295L2.01221 53.6509C0.673645 52.8739 0.0028008 51.5086 8.7518e-06 50.1421V70.9436L0.00630481 109.841V89.0568Z" fill="var(--island-side)"/>
+										<path clip-rule="evenodd" fill-rule="evenodd" d="M0.00630481 89.0568L8.7518e-06 98.7724V70.9436C0.0028008 72.3101 0.673645 73.6754 2.01221 74.4524L37.8067 95.231L51.5274 103.196L80.0337 119.744C81.5745 120.638 83.2915 121.085 85.0085 121.085V100.284C83.2915 100.284 81.5745 99.8365 80.0337 98.9421L51.5274 82.3943L37.8067 74.4295L2.01221 53.6509C0.673645 52.8739 0.0028008 51.5086 8.7518e-06 50.1421V70.9436L0.00630481 109.841V89.0568Z" fill="var(--island-shade-light)"/>
+										<path d="M89.9833 98.9421C88.4426 99.8365 86.7256 100.284 85.0085 100.284L85.0119 121.085C86.7278 121.085 88.4436 120.637 89.9833 119.744L132.092 95.2995L167.988 74.4623C169.221 73.7465 169.887 72.5318 169.987 71.2768L170 50.1502C169.998 51.5172 169.327 52.8833 167.988 53.6608L132.092 74.498L89.9833 98.9421Z" fill="var(--island-side)"/>
+										<path d="M89.9833 98.9421C88.4426 99.8365 86.7256 100.284 85.0085 100.284L85.0119 121.085C86.7278 121.085 88.4436 120.637 89.9833 119.744L132.092 95.2995L167.988 74.4623C169.221 73.7465 169.887 72.5318 169.987 71.2768L170 50.1502C169.998 51.5172 169.327 52.8833 167.988 53.6608L132.092 74.498L89.9833 98.9421Z" fill="var(--island-shade-medium)"/>
+										<path d="M2.0185 113.367L80.04 158.658C81.5807 159.553 83.2978 160 85.0148 160L85.0085 121.085C83.2915 121.085 81.5745 120.638 80.0337 119.744L51.5274 103.196L37.8067 95.231L2.01221 74.4524C0.673645 73.6754 0.0028008 72.3101 8.7518e-06 70.9436L0.00630481 89.0568V109.841C0.00350103 111.213 0.674347 112.587 2.0185 113.367Z" fill="var(--island-side-dark)"/>
+										<path d="M89.9896 158.658L167.994 113.377C169.17 112.694 169.831 111.558 169.976 110.365L169.976 109.36L169.983 97.8858C169.98 98.179 169.975 98.3324 169.97 98.2909L169.975 89.5656L169.987 71.2768C169.887 72.5318 169.221 73.7465 167.988 74.4623L132.092 95.2995L89.9833 119.744C88.4436 120.637 86.7278 121.085 85.0119 121.085L85.0148 139.198V160C86.7318 160 88.4489 159.553 89.9896 158.658Z" fill="var(--island-side-dark)"/>
+										<path d="M89.9896 158.658L167.994 113.377C169.17 112.694 169.831 111.558 169.976 110.365L169.976 109.36L169.983 97.8858C169.98 98.179 169.975 98.3324 169.97 98.2909L169.975 89.5656L169.987 71.2768C169.887 72.5318 169.221 73.7465 167.988 74.4623L132.092 95.2995L89.9833 119.744C88.4436 120.637 86.7278 121.085 85.0119 121.085L85.0148 139.198V160C86.7318 160 88.4489 159.553 89.9896 158.658Z" fill="var(--island-shade-medium)"/>
+									</g>
+								</svg>
+								<div class="island__top-content">
+									{#if isLocked}
+										<p class="island__locked-label">Complete previous skill to unlock</p>
+									{/if}
+								</div>
 							</div>
 						</div>
 					</div>
-					<h2 class="island__name">{skill.name}</h2>
-				</div>
-				<div class="node-desc">
-					<p class="island-desc">{skill.description}</p>
-				</div>
-			</article>
-		{/each}
+					<!-- Card body: title, progress, bar, description, CTA -->
+					<div class="carousel-card__body">
+						<h2 class="carousel-card__title">{skill.name}</h2>
+						<p class="carousel-card__desc">{skill.description}</p>
+						{#if isLocked}
+							<p class="carousel-card__locked-msg">Complete previous skill to continue</p>
+						{:else}
+							<div
+								class="carousel-card__progress"
+								role="progressbar"
+								aria-valuenow={isCurrent ? progress.current : progress.required}
+								aria-valuemin={0}
+								aria-valuemax={progress.required}
+								aria-label="{isCurrent ? progress.label + ': ' + progress.current + ' of ' + progress.required : 'Completed'}"
+							>
+								<div class="carousel-card__progress-track">
+									<div class="carousel-card__progress-fill" style="width: {isCompleted ? 100 : progressPercent}%"></div>
+								</div>
+							</div>
+						{/if}
+					</div>
+				</article>
+			{/each}
+		</div>
+		<nav class="carousel-dots" aria-label="Go to skill">
+			{#each SKILLS as _, i}
+				<button
+					type="button"
+					class="carousel-dot"
+					class:active={activeIndex === i}
+					aria-label="Skill {i + 1}"
+					aria-current={activeIndex === i ? 'true' : undefined}
+					onclick={() => goToSlide(i)}
+				></button>
+			{/each}
+		</nav>
 	</div>
 
 	<form method="post" action="?/signOut" use:enhance class="sign-out-form">
@@ -150,66 +158,159 @@
 	.me-subtitle {
 		font-size: 0.9rem;
 		color: var(--text-muted);
-		margin: 0 0 2rem 0;
+		margin: 0 0 1.5rem 0;
 	}
 
-	/* Isometric container: 30–45° top-down perspective */
-	.map-perspective {
-		position: relative;
-		list-style: none;
-		margin: 0;
-		padding: 0;
-		perspective: 900px;
-		transform-style: preserve-3d;
+	/* Horizontal carousel */
+	.carousel-outer {
+		margin: 0 calc(-1 * var(--page-padding));
+		padding-bottom: 0.5rem;
 	}
-	/* Staggered row: spacer | island | description */
-	.map-node {
-		position: relative;
-		z-index: 1;
-		display: grid;
-		grid-template-columns: 1fr minmax(200px, 260px) 1fr;
-		align-items: start;
+	.carousel {
+		display: flex;
+		overflow-x: auto;
+		overflow-y: hidden;
+		scroll-snap-type: x mandatory;
+		-webkit-overflow-scrolling: touch;
+		scrollbar-width: none;
 		gap: 0;
-		margin-bottom: 1.75rem;
-		min-height: 4rem;
+		padding: 0 var(--page-padding) 1rem;
 	}
-	.map-node:last-child {
-		margin-bottom: 0;
+	.carousel::-webkit-scrollbar {
+		display: none;
 	}
-	.map-node.node--alt .node-spacer {
-		grid-column: 2;
+	.carousel-card {
+		flex: 0 0 auto;
+		width: min(320px, calc(100vw - 2 * var(--page-padding)));
+		scroll-snap-align: center;
+		scroll-snap-stop: always;
+		display: flex;
+		flex-direction: column;
+		align-items: stretch;
+		background: rgba(10, 45, 82, 0.35);
+		border: 1px solid rgba(13, 53, 96, 0.5);
+		border-radius: 20px;
+		overflow: hidden;
+		margin-right: 1rem;
+		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 	}
-	.map-node.node--alt .island-cell {
-		grid-column: 1;
+	.carousel-card:last-child {
+		margin-right: var(--page-padding);
 	}
-	.map-node.node--alt .node-desc {
-		grid-column: 3;
-		text-align: left;
-		padding-left: 0.75rem;
+	.carousel-card__island {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		padding: 1.25rem 1rem 0.75rem;
+		min-height: 140px;
 	}
-	.node-spacer {
-		grid-column: 1;
-	}
-	.island-cell {
-		grid-column: 2;
-		padding: 0 6px;
+	.carousel-card__body {
+		flex: 1;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
+		text-align: center;
+		padding: 0 1.25rem 1.25rem;
 	}
-	.node-desc {
-		grid-column: 3;
-		padding: 0 0.5rem;
-		text-align: right;
+	.carousel-card__title {
+		font-size: 1.05rem;
+		font-weight: 600;
+		color: var(--text);
+		margin: 0 0 0.5rem;
+		line-height: 1.3;
 	}
-	.island-desc {
-		font-size: 0.8125rem;
+	.carousel-card__progress {
+		width: 100%;
+		margin-top: auto;
+		margin-bottom: 0;
+		padding-top: 1rem;
+	}
+	.carousel-card__progress-track {
+		height: 12px;
+		/* Hold-to-log style: blue-tinted, translucent track */
+		background: rgba(200, 222, 248, 0.18);
+		border-radius: 999px;
+		overflow: hidden;
+		box-shadow:
+			inset 0 1px 2px rgba(0, 0, 0, 0.1),
+			0 0 0 1px rgba(210, 230, 255, 0.12);
+	}
+	.carousel-card__progress-fill {
+		height: 100%;
+		/* Glossy fill: base blue + bright top reflection band */
+		background:
+			linear-gradient(
+				180deg,
+				rgba(255, 255, 255, 0.55) 0%,
+				rgba(255, 255, 255, 0.25) 28%,
+				transparent 50%
+			),
+			linear-gradient(
+				90deg,
+				rgba(220, 238, 255, 0.5) 0%,
+				rgba(200, 222, 248, 0.4) 50%,
+				rgba(175, 205, 240, 0.35) 100%
+			);
+		border-radius: 999px;
+		transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+		box-shadow:
+			0 0 12px rgba(180, 210, 255, 0.25),
+			inset 0 2px 4px rgba(255, 255, 255, 0.35),
+			inset 0 1px 0 rgba(255, 255, 255, 0.5),
+			inset 0 -1px 0 rgba(0, 0, 0, 0.08);
+	}
+	.map-node.node--current .carousel-card__progress-track {
+		background: rgba(210, 230, 255, 0.22);
+		box-shadow:
+			inset 0 1px 2px rgba(0, 0, 0, 0.08),
+			0 0 0 1px rgba(220, 238, 255, 0.18);
+	}
+	.map-node.node--current .carousel-card__progress-fill {
+		box-shadow:
+			0 0 16px rgba(180, 210, 255, 0.35),
+			inset 0 2px 4px rgba(255, 255, 255, 0.4),
+			inset 0 1px 0 rgba(255, 255, 255, 0.6),
+			inset 0 -1px 0 rgba(0, 0, 0, 0.06);
+	}
+	.carousel-card__desc {
+		font-size: 16px;
 		color: var(--text-muted);
 		line-height: 1.45;
-		margin: 0;
+		margin: 0 0 1rem;
 	}
-	.map-node.node--alt .island-desc {
-		text-align: left;
+	.carousel-card__locked-msg {
+		font-size: 12px;
+		color: var(--text-muted);
+		line-height: 1.4;
+		margin: 0;
+		margin-top: auto;
+		padding-top: 1rem;
+	}
+	.carousel-dots {
+		display: flex;
+		justify-content: center;
+		gap: 0.5rem;
+		padding: 1rem var(--page-padding) 0;
+		flex-wrap: wrap;
+	}
+	.carousel-dot {
+		width: 6px;
+		height: 6px;
+		min-width: 6px;
+		min-height: 6px;
+		border-radius: 50%;
+		border: none;
+		background: rgba(255, 255, 255, 0.2);
+		cursor: pointer;
+		padding: 0;
+		transition: background 0.2s, transform 0.2s;
+	}
+	.carousel-dot:hover {
+		background: rgba(255, 255, 255, 0.35);
+	}
+	.carousel-dot.active {
+		background: var(--text-muted);
+		transform: scale(1.15);
 	}
 
 	/* Island: badge + SVG isometric tile (single shape, seamless joins) */
@@ -234,7 +335,7 @@
 		--island-shade-light: var(--island-shade-light);
 		--island-shade-medium: var(--island-shade-medium);
 	}
-	/* Current level: Hold-to-log style blues + soft glow, less transparent */
+	/* Current skill: Hold-to-log style blues + soft glow, less transparent */
 	.map-node.node--current .island__block {
 		--island-top: var(--island-current-top);
 		--island-side: var(--island-current-side);
@@ -274,27 +375,7 @@
 		justify-content: center;
 		z-index: 2;
 	}
-	/* Circular progress ring around the number (unlocked only) */
-	.island-badge-ring {
-		position: absolute;
-		inset: 0;
-		border-radius: 50%;
-		background: conic-gradient(
-			var(--island-progress-fill) 0deg,
-			var(--island-progress-fill) calc(var(--progress, 0) * 3.6deg),
-			var(--island-progress-track) calc(var(--progress, 0) * 3.6deg),
-			var(--island-progress-track) 360deg
-		);
-		box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
-	}
-	.island-badge-ring::after {
-		content: '';
-		position: absolute;
-		inset: 4px;
-		border-radius: 50%;
-		background: var(--bg);
-	}
-	/* Badge (number or lock) sits on top of ring */
+	/* Badge (number or lock) */
 	.island-badge {
 		position: relative;
 		z-index: 1;
@@ -319,21 +400,7 @@
 		background: var(--island-badge-locked-bg);
 		color: var(--text-muted);
 	}
-	/* Active level: more visible track so empty progress ring is obvious */
-	.map-node.node--current .island-badge-ring {
-		--island-progress-track: rgba(255, 255, 255, 0.22);
-		box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2);
-	}
 
-	/* Level name: outside the block, below the island */
-	.island__name {
-		font-size: 1rem;
-		font-weight: 600;
-		color: var(--text);
-		margin: 0.6rem 0 0;
-		line-height: 1.3;
-		text-align: center;
-	}
 	.island__locked-label {
 		position: relative;
 		font-size: 0.7rem;
@@ -384,35 +451,4 @@
 		color: var(--text);
 	}
 
-	@media (max-width: 520px) {
-		.map-node {
-			grid-template-columns: 1fr;
-			grid-template-areas: "island" "desc";
-			gap: 0.6rem;
-		}
-		.map-node .node-spacer {
-			display: none;
-		}
-		.map-node.node--alt .node-spacer {
-			display: none;
-		}
-		.island-cell {
-			grid-column: 1;
-			grid-area: island;
-			max-width: 260px;
-			margin: 0 auto;
-		}
-		.map-node.node--alt .island-cell {
-			grid-column: 1;
-		}
-		.node-desc {
-			grid-column: 1;
-			grid-area: desc;
-			text-align: center;
-			padding: 0 0.5rem;
-		}
-		.map-node.node--alt .island-desc {
-			text-align: center;
-		}
-	}
 </style>

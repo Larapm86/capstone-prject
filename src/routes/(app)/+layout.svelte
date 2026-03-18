@@ -3,13 +3,10 @@
 	import { fade } from 'svelte/transition';
 	import { page } from '$app/stores';
 	import { hasNewCravingForStats } from '$lib/stores/newCraving';
-	import { levelOverride } from '$lib/stores/levelOverride';
 	import { reflectHoldState } from '$lib/stores/reflectHold';
 	import { stars } from '$lib/starsData';
-	import { MAX_LEVEL } from '$lib/constants/skills';
 
 	let { children }: { children: import('svelte').Snippet } = $props();
-	const level = $derived($page.data?.level ?? 1);
 	let shootingStarRun = $state(false);
 	let shootingStarTimeout: ReturnType<typeof setTimeout> | null = null;
 	let landing = $state(false);
@@ -63,40 +60,6 @@
 	</defs>
 </svg>
 <div class="cravings-shell" class:landing class:craving-route={$page.url.pathname === '/craving'}>
-	<!-- Level selector for testing: override server level in craving flow -->
-	<nav class="level-nav" aria-label="Test level">
-		<span class="level-nav-label">Level</span>
-		<div class="level-nav-buttons">
-			{#each Array.from({ length: MAX_LEVEL }, (_, i) => i + 1) as l}
-				<button
-					type="button"
-					class="level-nav-btn"
-					class:active={$levelOverride === null ? level === l : $levelOverride === l}
-					class:override={$levelOverride === l}
-					onclick={() => ($levelOverride = $levelOverride === l ? null : l)}
-					aria-pressed={$levelOverride === null ? level === l : $levelOverride === l}
-					aria-label="Test as level {l}"
-				>
-					{l}
-				</button>
-			{/each}
-			<button
-				type="button"
-				class="level-nav-btn level-nav-btn--real"
-				class:active={$levelOverride === null}
-				onclick={() => ($levelOverride = null)}
-				aria-pressed={$levelOverride === null}
-				aria-label="Use server level ({level})"
-			>
-				Real
-			</button>
-		</div>
-		{#if $levelOverride !== null}
-			<span class="level-nav-hint">Testing as L{$levelOverride}</span>
-		{:else}
-			<span class="level-nav-hint">L{level}</span>
-		{/if}
-	</nav>
 	{#if $page.url.pathname === '/'}
 		<!-- Tree/horizon full-bleed: rendered here so it's never inside the scroll container -->
 		<div
@@ -129,7 +92,8 @@
 			</div>
 		</div>
 	{/if}
-	{#if $page.url.pathname !== '/craving'}
+	{#if $page.url.pathname === '/stats' || $page.url.pathname === '/settings'}
+		<!-- Stars background on Insights and Me (Reflect has its own in reflect-bg-layer) -->
 		<div class="milky-band" aria-hidden="true"></div>
 		<div class="stars" aria-hidden="true">
 			{#each stars as star}
@@ -216,92 +180,6 @@
 	}
 	.cravings-shell.landing {
 		animation: cravings-land-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-	}
-	/* Level selector for testing */
-	.level-nav {
-		position: sticky;
-		top: 0;
-		z-index: 50;
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.35rem 0.5rem;
-		padding: 0.35rem 0.75rem;
-		padding-top: calc(0.35rem + env(safe-area-inset-top, 0px));
-		background: rgba(1, 8, 16, 0.85);
-		backdrop-filter: blur(8px);
-		border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-	}
-	.level-nav-label {
-		font-size: 0.65rem;
-		font-weight: 600;
-		color: rgba(255, 255, 255, 0.6);
-		text-transform: uppercase;
-		letter-spacing: 0.04em;
-	}
-	.level-nav-buttons {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.2rem;
-	}
-	.level-nav-btn {
-		min-width: 1.4rem;
-		height: 1.25rem;
-		padding: 0 0.3rem;
-		font-size: 0.7rem;
-		font-weight: 600;
-		font-family: var(--font-sans);
-		color: rgba(255, 255, 255, 0.7);
-		background: rgba(255, 255, 255, 0.08);
-		border: 1px solid rgba(255, 255, 255, 0.15);
-		border-radius: 0.25rem;
-		cursor: pointer;
-		-webkit-tap-highlight-color: transparent;
-		transition: background 0.2s, color 0.2s, border-color 0.2s;
-	}
-	.level-nav-btn:hover {
-		background: rgba(255, 255, 255, 0.14);
-		color: rgba(255, 255, 255, 0.9);
-	}
-	.level-nav-btn.active {
-		background: rgba(255, 255, 255, 0.2);
-		color: #fff;
-		border-color: rgba(255, 255, 255, 0.35);
-	}
-	.level-nav-btn.override {
-		border-color: rgba(180, 220, 255, 0.5);
-		box-shadow: 0 0 0 1px rgba(180, 220, 255, 0.2);
-	}
-	.level-nav-btn--real {
-		margin-left: 0.15rem;
-	}
-	.level-nav-hint {
-		font-size: 0.65rem;
-		color: rgba(255, 255, 255, 0.5);
-		margin-left: auto;
-	}
-	.cravings-shell.craving-route .level-nav {
-		background: rgba(255, 255, 255, 0.95);
-		border-bottom-color: rgba(1, 31, 59, 0.12);
-	}
-	.cravings-shell.craving-route .level-nav-label,
-	.cravings-shell.craving-route .level-nav-hint {
-		color: rgba(1, 31, 59, 0.6);
-	}
-	.cravings-shell.craving-route .level-nav-btn {
-		color: rgba(1, 31, 59, 0.7);
-		background: rgba(1, 31, 59, 0.08);
-		border-color: rgba(1, 31, 59, 0.2);
-	}
-	.cravings-shell.craving-route .level-nav-btn:hover {
-		background: rgba(1, 31, 59, 0.14);
-		color: #011f3b;
-	}
-	.cravings-shell.craving-route .level-nav-btn.active {
-		background: rgba(1, 31, 59, 0.2);
-		color: #011f3b;
-		border-color: rgba(1, 31, 59, 0.35);
 	}
 	/* Reflect page: tree/horizon full-bleed (sibling of main, so never clipped) */
 	.reflect-bg-layer {
@@ -401,7 +279,7 @@
 	.milky-band {
 		position: fixed;
 		inset: 0;
-		z-index: -1;
+		z-index: 0;
 		pointer-events: none;
 		/* Subtle milky way band: diagonal brighter streak */
 		background: radial-gradient(
@@ -414,7 +292,7 @@
 	.stars {
 		position: fixed;
 		inset: 0;
-		z-index: -1;
+		z-index: 0;
 		pointer-events: none;
 		overflow: hidden;
 	}
@@ -444,7 +322,7 @@
 	.shooting-star {
 		position: fixed;
 		inset: 0;
-		z-index: -1;
+		z-index: 0;
 		pointer-events: none;
 		overflow: hidden;
 	}
@@ -517,6 +395,11 @@
 			height: auto;
 			min-height: 100vh;
 			max-height: none;
+		}
+		/* Keep tree/horizon fixed to viewport on Reflect when body scrolls */
+		.reflect-bg-layer {
+			position: fixed;
+			inset: 0;
 		}
 		.screen-content {
 			flex: 1 1 auto;
