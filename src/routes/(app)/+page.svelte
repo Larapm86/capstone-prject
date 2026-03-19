@@ -1,19 +1,30 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { get } from 'svelte/store';
+	import { onMount, tick } from 'svelte';
 	import { page } from '$app/stores';
-	import { goto, invalidate } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import CravingForm from '$lib/components/craving-form/CravingForm.svelte';
 	import BecomLogo from '$lib/components/BecomLogo.svelte';
-	import { SKILLS } from '$lib/constants/skills';
+	import { MAX_SKILL, SKILLS } from '$lib/constants/skills';
+	import { dismissLoggedCelebration, loggedCelebration } from '$lib/stores/loggedCelebration';
 	import { hasNewCravingForStats } from '$lib/stores/newCraving';
-	import { levelOverride } from '$lib/stores/levelOverride';
+	import { skillOverride } from '$lib/stores/skillOverride';
 	import { reflectHoldState } from '$lib/stores/reflectHold';
 	import type { ActionData } from './$types';
 
-	let { data, form }: { data: { level?: number; cravingCount?: number; userName?: string | null; user?: { name?: string | null }; progress?: { current: number; required: number; label: string } }; form: ActionData } = $props();
-	const level = $derived($levelOverride ?? data?.level ?? 1);
-	const skillName = $derived(SKILLS[Math.min(level, SKILLS.length) - 1]?.name ?? 'Reflect');
-	const progress = $derived(data?.progress ?? { current: 0, required: 1, label: 'sessions' });
+	let { data, form }: { data: { skill?: number; cravingCount?: number; userName?: string | null; user?: { name?: string | null }; progress?: { current: number; required: number; label: string } }; form: ActionData } = $props();
+
+	/** Use $page.data so skill/progress stay in sync after invalidate (destructured `data` can lag behind). */
+	const layoutSkill = $derived(
+		typeof $page.data?.skill === 'number' && $page.data.skill >= 1 ? $page.data.skill : (data?.skill ?? 1)
+	);
+	const layoutProgress = $derived(
+		$page.data?.progress ??
+			data?.progress ?? { current: 0, required: 1, label: 'sessions' }
+	);
+	const currentSkill = $derived($skillOverride ?? layoutSkill);
+	const skillName = $derived(SKILLS[Math.min(currentSkill, SKILLS.length) - 1]?.name ?? 'Reflect');
+	const progress = $derived(layoutProgress);
 	const progressPercent = $derived(
 		progress.required > 0 ? Math.min(100, (progress.current / progress.required) * 100) : 0
 	);
@@ -31,15 +42,59 @@
 
 	/** On mobile we use tap + smooth fill; on desktop, hold. */
 	let isTouchDevice = $state(false);
-	$effect(() => {
-		const count = data?.cravingCount ?? 0;
-		if (count > 0 && fireflyCount !== count) {
-			fireflyCount = count;
-			fireflyPhase = 'idle';
+
+	/**
+	 * Fireflies on the hold dome:
+	 * - Skill 1: one blue fly per session logged toward this tier (up to required), so progress is visible.
+	 * - Skill 2+: one fly per unlocked tier, each skill’s card color.
+	 * Keys use `slot` (not `step`) so multiple skill-1 flies don’t collapse in {#each} (was keyed by pos.step → only one blue dot).
+	 */
+	const skillForFireflies = $derived($skillOverride ?? layoutSkill);
+	const completedSkillFireflies = $derived.by(() => {
+		const sk = Math.min(Math.max(skillForFireflies, 1), MAX_SKILL);
+		const prog = layoutProgress;
+		const req = Math.max(1, prog.required || 1);
+		const cur = Math.max(0, prog.current ?? 0);
+
+		if (sk === 1) {
+			const n = Math.max(1, Math.min(cur, req));
+			return Array.from({ length: n }, (_, i) => ({
+				step: 1,
+				slot: i,
+				cardBg: SKILLS[0].cardBg
+			}));
 		}
+
+		return Array.from({ length: sk }, (_, i) => ({
+			step: i + 1,
+			slot: i,
+			cardBg: SKILLS[i].cardBg
+		}));
 	});
+
 	onMount(() => {
 		isTouchDevice = typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches;
+		/** After logging from /craving, run firefly celebration + insights flag (same as closeWhite on Reflect). */
+		if (typeof sessionStorage !== 'undefined') {
+			const raw = sessionStorage.getItem('becom-craving-return');
+			if (raw) {
+				try {
+					const parsed = JSON.parse(raw) as {
+						skillLeveledUp?: boolean;
+						newSkillAfterLog?: number;
+					};
+					sessionStorage.removeItem('becom-craving-return');
+					if (typeof parsed.newSkillAfterLog === 'number') {
+						void (async () => {
+							await tick();
+							await closeWhite(true, parsed.skillLeveledUp === true, parsed.newSkillAfterLog);
+						})();
+					}
+				} catch {
+					sessionStorage.removeItem('becom-craving-return');
+				}
+			}
+		}
 	});
 
 	/** Form action for craving log – absolute URL so mobile/PWA always posts to the right route. Guard for SSR/mobile. */
@@ -80,22 +135,22 @@
 	let holdCompleteTimeoutId: ReturnType<typeof setTimeout> | null = null;
 	let holdReleaseCleanup: (() => void) | null = null;
 	let holdStartTime = 0;
-	let showWinState = $state(false);
-	let winStateExiting = $state(false);
 	let trackFormMessage = $state<string | null>(null);
 	let submitting = $state(false);
 	let hasCompletedOnce = $state(false);
 	let showFireflyFlash = $state(false);
-	/** Number of fireflies (one per craving). Capped for display. */
-	const FIREFLY_DISPLAY_MAX = 15;
-	let fireflyCount = $state(0);
-	/** Sequence: hidden → flying-in (after delay) → idle + flash */
-	let fireflyPhase = $state<'hidden' | 'flying-in' | 'idle'>('hidden');
+	/** While non-null, only this index uses hidden / fly-in / flash; others stay drifting. */
+	let fireflyIntroForIndex = $state<number | null>(null);
+	/** Color of the skill just completed (for flash / glow). */
+	let celebrationFireflyColor = $state<string | null>(null);
+	const FIREFLY_DISPLAY_MAX = 12;
+	/** Sequence for the *new* firefly: hidden → flying-in → idle + flash */
+	let fireflyPhase = $state<'hidden' | 'flying-in' | 'idle'>('idle');
 
-	/** Each firefly: rest position + unique drift path; different duration, direction and phase so they don't move together */
-	const fireflyPositions = $derived(
-		Array.from({ length: Math.min(fireflyCount, FIREFLY_DISPLAY_MAX) }, (_, i) => {
-			const n = Math.min(fireflyCount, FIREFLY_DISPLAY_MAX);
+	const fireflyRows = $derived.by(() => {
+		const flies = completedSkillFireflies.slice(0, FIREFLY_DISPLAY_MAX);
+		const n = flies.length;
+		return flies.map((f, i) => {
 			const baseAngle = (i / Math.max(n, 1)) * 2 * Math.PI - Math.PI / 2;
 			const restRadius = 6;
 			const pathRadiusX = 28;
@@ -104,13 +159,13 @@
 			const a1 = seed * 2 * Math.PI;
 			const a2 = seed * 2 * Math.PI + 2.1;
 			const a3 = seed * 2 * Math.PI + 4.2;
-			// Different duration per firefly (7–14s) so they don't stay in sync
 			const duration = 7 + (i % 8) * 0.95;
-			// Reverse direction for half so they move the other way around the path
 			const reverse = i % 2 === 1;
-			// Phase offset: start each at a different point in the cycle (negative delay)
 			const phaseOffset = (i * 2.3) % 12;
 			return {
+				step: f.step,
+				slot: f.slot,
+				cardBg: f.cardBg,
 				dx: Math.cos(baseAngle) * restRadius,
 				dy: Math.sin(baseAngle) * restRadius,
 				delay: -phaseOffset,
@@ -123,8 +178,33 @@
 				x3: Math.round(Math.cos(a3) * pathRadiusX),
 				y3: Math.round(Math.sin(a3) * pathRadiusY)
 			};
-		})
-	);
+		});
+	});
+
+	function fireflyHidden(i: number) {
+		/* Only hide when a specific index is in the intro “hidden” beat — never hide all flies when intro is null
+		   (stuck fireflyPhase === 'hidden' would otherwise zero out every firefly). */
+		if (fireflyIntroForIndex === null) return false;
+		if (i !== fireflyIntroForIndex) return false;
+		return fireflyPhase === 'hidden';
+	}
+
+	function fireflyFlyIn(i: number) {
+		return fireflyIntroForIndex === i && fireflyPhase === 'flying-in';
+	}
+
+	function fireflyIdle(i: number) {
+		if (showFireflyFlash && fireflyIntroForIndex === i) return false;
+		if (fireflyIntroForIndex !== null && i === fireflyIntroForIndex) {
+			return fireflyPhase === 'idle' && !showFireflyFlash;
+		}
+		if (fireflyHidden(i) || fireflyFlyIn(i)) return false;
+		return true;
+	}
+
+	function fireflyFlash(i: number) {
+		return showFireflyFlash && fireflyIntroForIndex === i;
+	}
 
 	function finishHold() {
 		if (holdIntervalId) clearInterval(holdIntervalId);
@@ -260,31 +340,64 @@
 	/** When false, tooltip is hidden until 0.5s after firefly flash (after logging a craving). */
 	let showHoldTooltip = $state(true);
 
-	function closeWhite(fromSuccess?: boolean) {
+	async function closeWhite(fromSuccess?: boolean, skillLeveledUp?: boolean, newSkillAfterLog?: number) {
 		phase = 'idle';
 		holdProgress = 0;
-		showWinState = false;
-		winStateExiting = false;
+		dismissLoggedCelebration();
 		trackFormMessage = null;
 		if (fromSuccess) {
+			await invalidateAll();
 			showHoldTooltip = false;
-			fireflyPhase = 'hidden';
-			// Delay, then firefly flies in (invalidate only after sequence so $effect doesn't overwrite phase)
-			setTimeout(() => {
-				fireflyPhase = 'flying-in';
+			hasNewCravingForStats.set(true);
+			if (typeof sessionStorage !== 'undefined') {
+				sessionStorage.setItem('becom-new-craving', '1');
+			}
+
+			const canCelebrate =
+				skillLeveledUp === true && typeof newSkillAfterLog === 'number' && newSkillAfterLog >= 2;
+
+			if (canCelebrate) {
+				/* New firefly index = newly unlocked step (1-based → 0-based). Clamp to SKILLS length. */
+				const newIdx = Math.min(Math.max(newSkillAfterLog, 2), MAX_SKILL) - 1;
+				fireflyIntroForIndex = newIdx;
+				fireflyPhase = 'hidden';
+				const unlockedTier = SKILLS[Math.min(newSkillAfterLog, SKILLS.length) - 1];
+				celebrationFireflyColor = unlockedTier?.cardBg ?? null;
 				setTimeout(() => {
-					fireflyPhase = 'idle';
-					showFireflyFlash = true;
+					fireflyPhase = 'flying-in';
 					setTimeout(() => {
-						showFireflyFlash = false;
+						fireflyPhase = 'idle';
+						showFireflyFlash = true;
 						setTimeout(() => {
-							showHoldTooltip = true;
-							hasNewCravingForStats.set(true);
-							invalidate();
-						}, TOOLTIP_AFTER_FLASH_MS);
-					}, FIREFLY_FLASH_MS);
-				}, FIREFLY_FLY_IN_MS);
-			}, FIREFLY_DELAY_MS);
+							showFireflyFlash = false;
+							celebrationFireflyColor = null;
+							fireflyIntroForIndex = null;
+							fireflyPhase = 'idle';
+							setTimeout(() => {
+								showHoldTooltip = true;
+							}, TOOLTIP_AFTER_FLASH_MS);
+						}, FIREFLY_FLASH_MS);
+					}, FIREFLY_FLY_IN_MS);
+				}, FIREFLY_DELAY_MS);
+			} else if (typeof newSkillAfterLog === 'number' && newSkillAfterLog >= 1) {
+				/* Every successful log: brief dome glow so feedback isn’t tied only to leveling (fixes “no fireflies” after log). */
+				fireflyIntroForIndex = null;
+				fireflyPhase = 'idle';
+				celebrationFireflyColor =
+					SKILLS[Math.min(newSkillAfterLog, SKILLS.length) - 1]?.cardBg ?? null;
+				showFireflyFlash = true;
+				setTimeout(() => {
+					showFireflyFlash = false;
+					celebrationFireflyColor = null;
+					setTimeout(() => {
+						showHoldTooltip = true;
+					}, TOOLTIP_AFTER_FLASH_MS);
+				}, FIREFLY_FLASH_MS);
+			} else {
+				fireflyIntroForIndex = null;
+				fireflyPhase = 'idle';
+				showHoldTooltip = true;
+			}
 		} else {
 			showHoldTooltip = true;
 		}
@@ -292,30 +405,33 @@
 
 	async function handleTrackResult(result: {
 		type: string;
-		data?: { success?: boolean; message?: string; cravingCount?: number };
+		data?: { success?: boolean; message?: string; cravingCount?: number; skill?: number };
 		error?: unknown;
 	}) {
 		submitting = false;
 		const msg = result.data?.message ?? (result.type === 'error' && result.error instanceof Error ? result.error.message : null);
 		trackFormMessage = msg ?? (result.type === 'failure' || result.type === 'error' ? 'Something went wrong. Try again.' : null);
-		if (result.type === 'success' && result.data?.success === true) {
-			showWinState = true;
-			if (typeof result.data?.cravingCount === 'number') {
-				fireflyCount = result.data.cravingCount;
-			} else {
-				fireflyCount += 1;
-			}
-			hasNewCravingForStats.set(true);
-			if (typeof sessionStorage !== 'undefined') {
-				sessionStorage.setItem('becom-new-craving', '1');
-			}
+		const payload = result.data;
+		const successPayload =
+			result.type === 'success' &&
+			payload &&
+			typeof payload === 'object' &&
+			((payload as { success?: boolean }).success === true ||
+				typeof (payload as { skill?: number }).skill === 'number');
+		if (successPayload) {
+			loggedCelebration.set({ active: true, exiting: false });
+			const prevSkill = Number(get(page).data?.skill ?? data?.skill ?? 1) || 1;
+			const newSkill = (payload as { skill?: number }).skill ?? prevSkill;
+			const skillLeveledUp = newSkill > prevSkill;
 			setTimeout(() => {
-				winStateExiting = true;
-				setTimeout(() => closeWhite(true), WIN_STATE_FADEOUT_MS);
+				loggedCelebration.set({ active: true, exiting: true });
+				setTimeout(() => {
+					void closeWhite(true, skillLeveledUp, newSkill);
+				}, WIN_STATE_FADEOUT_MS);
 			}, WIN_STATE_DURATION_MS);
 		} else if (result.type === 'failure' || result.type === 'error') {
 			setTimeout(() => {
-				closeWhite();
+				void closeWhite();
 			}, ERROR_DISPLAY_MS);
 		}
 	}
@@ -364,7 +480,7 @@
 				class="hold-button"
 				class:flicker={phase === 'idle'}
 				class:firefly-flash={showFireflyFlash}
-				style="clip-path: url(#hold-button-drop)"
+				style={`clip-path: url(#hold-button-drop)${showFireflyFlash && celebrationFireflyColor ? `; --celebration-tint: ${celebrationFireflyColor}` : ''}`}
 				aria-describedby={phase === 'idle' && showHoldTooltip ? 'hold-to-log-tooltip' : undefined}
 				onpointerdown={startHold}
 				onpointerup={cancelHold}
@@ -378,14 +494,14 @@
 						{isTouchDevice ? 'Opening…' : 'Keep holding until the Reflect screen appears'}
 					</span>
 				{/if}
-				{#each fireflyPositions as pos, i}
+				{#each fireflyRows as pos, i (pos.slot)}
 					<span
 						class="hold-button-firefly"
-						class:hidden={fireflyPhase === 'hidden'}
-						class:fly-in={fireflyPhase === 'flying-in'}
-						class:flash={showFireflyFlash}
-						class:idle={fireflyPhase === 'idle' && !showFireflyFlash}
-						style="--dx: {pos.dx}px; --dy: {pos.dy}px; --drift-delay: {pos.delay}s; --drift-duration: {pos.duration}s; --x1: {pos.x1}px; --y1: {pos.y1}px; --x2: {pos.x2}px; --y2: {pos.y2}px; --x3: {pos.x3}px; --y3: {pos.y3}px;"
+						class:hidden={fireflyHidden(i)}
+						class:fly-in={fireflyFlyIn(i)}
+						class:flash={fireflyFlash(i)}
+						class:idle={fireflyIdle(i)}
+						style="--dx: {pos.dx}px; --dy: {pos.dy}px; --drift-delay: {pos.delay}s; --drift-duration: {pos.duration}s; --x1: {pos.x1}px; --y1: {pos.y1}px; --x2: {pos.x2}px; --y2: {pos.y2}px; --x3: {pos.x3}px; --y3: {pos.y3}px; --firefly-fill: {pos.cardBg}; --firefly-glow: {pos.cardBg};"
 						class:drift-reverse={pos.reverse}
 						aria-hidden="true"
 					></span>
@@ -431,7 +547,13 @@
 {/if}
 
 {#if phase === 'complete'}
-	<div class="white-screen visible" class:exiting={winStateExiting} class:hide-content={showWinState} role="dialog" aria-label="Reflecting on a craving">
+	<div
+		class="white-screen visible"
+		class:exiting={$loggedCelebration.exiting}
+		class:hide-content={$loggedCelebration.active}
+		role="dialog"
+		aria-label="Reflecting on a craving"
+	>
 		<header class="app-nav-chrome white-screen__chrome" aria-label="Dialog tools">
 			<button type="button" class="close-button" onclick={() => closeWhite()} aria-label="Close">
 				<span class="close-icon" aria-hidden="true">×</span>
@@ -439,22 +561,21 @@
 		</header>
 		<div class="white-screen-content">
 			<CravingForm
-				level={level}
+				skill={currentSkill}
 				action={logCravingAction}
 				noRedirect={true}
-				submitLabel="Reflect it"
+				submitLabel="Reflect"
 				bind:submitting
 				errorMessage={trackFormMessage}
-				onResult={(result) => handleTrackResult(result as { type: string; data?: { success?: boolean; message?: string; cravingCount?: number } })}
+				onResult={(result) =>
+					handleTrackResult(
+						result as {
+							type: string;
+							data?: { success?: boolean; message?: string; cravingCount?: number; skill?: number };
+						}
+					)}
 			/>
 		</div>
-	</div>
-{/if}
-
-{#if showWinState}
-	<div class="win-state" class:exiting={winStateExiting} role="status" aria-live="polite">
-		<span class="win-check">✓</span>
-		<p class="win-text">Logged</p>
 	</div>
 {/if}
 
@@ -682,6 +803,8 @@
 	}
 	.hold-button-wrap.holding .hold-button-label {
 		animation: none;
+		position: relative;
+		z-index: 4;
 	}
 	.track-section.returned .hold-button-label {
 		animation: none;
@@ -713,6 +836,7 @@
 		content: '';
 		position: absolute;
 		inset: 0;
+		z-index: 0;
 		border-radius: 0;
 		background:
 			/* Elongated oval highlight, upper-left – glossy reflection */
@@ -739,6 +863,7 @@
 		content: '';
 		position: absolute;
 		inset: 0;
+		z-index: 0;
 		border-radius: 50%;
 		background: radial-gradient(
 			ellipse 75% 65% at 50% 50%,
@@ -812,9 +937,10 @@
 		transform: scale(1);
 		opacity: 1;
 	}
-	/* Fireflies inside the dome – one per craving; each uses --dx, --dy for offset */
+	/* Fireflies inside the dome – above ::before/::after gloss so they stay visible */
 	.hold-button-firefly {
 		position: absolute;
+		z-index: 2;
 		left: 50%;
 		top: 38%;
 		width: 6px;
@@ -822,12 +948,12 @@
 		margin-left: -3px;
 		margin-top: -3px;
 		border-radius: 50%;
-		background: rgba(255, 255, 255, 0.9);
+		background: color-mix(in srgb, var(--firefly-fill, #ffffff) 88%, white);
 		box-shadow:
-			0 0 6px rgba(255, 255, 255, 0.8),
-			0 0 12px rgba(220, 240, 255, 0.6);
+			0 0 6px color-mix(in srgb, var(--firefly-glow, #ffffff) 75%, transparent),
+			0 0 14px color-mix(in srgb, var(--firefly-glow, #cfe8ff) 45%, transparent);
 		pointer-events: none;
-		opacity: 0.7;
+		opacity: 0.78;
 		transform: translate(calc(-50% + var(--dx, 0px)), var(--dy, 0px));
 	}
 	/* Each firefly: own route (--x1,--y1 etc), duration (--drift-duration), phase (--drift-delay); .reverse = opposite direction */
@@ -877,11 +1003,12 @@
 	.hold-button-flash-overlay {
 		position: absolute;
 		inset: 0;
+		z-index: 3;
 		border-radius: 0;
 		background: radial-gradient(
 			ellipse 60% 50% at 50% 40%,
-			rgba(255, 255, 255, 0.5) 0%,
-			rgba(255, 255, 255, 0.2) 40%,
+			color-mix(in srgb, var(--celebration-tint, #ffffff) 55%, transparent) 0%,
+			color-mix(in srgb, var(--celebration-tint, #ffffff) 22%, transparent) 42%,
 			transparent 70%
 		);
 		pointer-events: none;
@@ -892,20 +1019,20 @@
 			opacity: 1;
 			transform: translate(calc(-50% + var(--dx, 0px)), var(--dy, 0px)) scale(1.5);
 			box-shadow:
-				0 0 10px rgba(255, 255, 255, 1),
-				0 0 20px rgba(255, 255, 255, 0.9),
-				0 0 28px rgba(220, 240, 255, 0.8);
+				0 0 10px color-mix(in srgb, var(--firefly-glow, #fff) 95%, white),
+				0 0 22px color-mix(in srgb, var(--firefly-glow, #fff) 70%, transparent),
+				0 0 34px color-mix(in srgb, var(--firefly-glow, #cfe8ff) 55%, transparent);
 		}
 		30% {
 			opacity: 1;
 			transform: translate(calc(-50% + var(--dx, 0px)), var(--dy, 0px)) scale(1.2);
 		}
 		100% {
-			opacity: 0.7;
+			opacity: 0.78;
 			transform: translate(calc(-50% + var(--dx, 0px)), var(--dy, 0px)) scale(1);
 			box-shadow:
-				0 0 6px rgba(255, 255, 255, 0.8),
-				0 0 12px rgba(220, 240, 255, 0.6);
+				0 0 6px color-mix(in srgb, var(--firefly-glow, #fff) 75%, transparent),
+				0 0 14px color-mix(in srgb, var(--firefly-glow, #cfe8ff) 45%, transparent);
 		}
 	}
 	@keyframes firefly-flash-overlay {
@@ -1068,45 +1195,5 @@
 		min-height: 0;
 		width: 100%;
 		max-width: 28rem;
-	}
-	/* Above .white-screen so "Logged" is visible on top of the form overlay */
-	.win-state {
-		position: fixed;
-		inset: 0;
-		background: var(--color-surface-paper);
-		z-index: 2147483648;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		gap: 0.75rem;
-		animation: win-fade 0.3s ease;
-	}
-	.win-state.exiting {
-		opacity: 0;
-		transition: opacity 0.4s ease-out;
-		pointer-events: none;
-	}
-	@keyframes win-fade {
-		from { opacity: 0; }
-		to { opacity: 1; }
-	}
-	.win-check {
-		width: 4rem;
-		height: 4rem;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: var(--color-brand-navy);
-		color: var(--color-text-on-frosted);
-		font-size: 2rem;
-		font-weight: 600;
-		border-radius: 50%;
-	}
-	.win-text {
-		font-size: 1.25rem;
-		font-weight: 600;
-		color: var(--color-brand-navy);
-		margin: 0;
 	}
 </style>

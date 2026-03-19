@@ -93,6 +93,12 @@
 	--color-text-on-frosted-muted: rgba(255, 255, 255, 0.65);
 	--border-frosted-divider: rgba(255, 255, 255, 0.35);
 
+	/*
+	 * Top ¾ circle (chord at y=0.75) — same geometry as Reflect hold button.
+	 * Use as mask-image (works inside 3D transforms; clip-path url() often fails there).
+	 */
+	--skill-dome-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1' preserveAspectRatio='none'%3E%3Cpath d='M 0.067 0.75 L 0.933 0.75 A 0.5 0.5 0 1 0 0.067 0.75 Z' fill='white'/%3E%3C/svg%3E");
+
 	/* Hover hit on dark chrome */
 	--surface-hover-light: rgba(255, 255, 255, 0.08);
 

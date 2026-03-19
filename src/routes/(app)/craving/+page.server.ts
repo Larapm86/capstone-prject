@@ -19,8 +19,8 @@ export const actions: Actions = {
 		const formData = await event.request.formData();
 		const payload = parseLogCravingFormData(formData);
 		try {
-			const { cravingCount, level } = await logCravingService(event.locals.user.id, payload);
-			return { success: true, cravingCount, level };
+			const { cravingCount, skill } = await logCravingService(event.locals.user.id, payload);
+			return { success: true, cravingCount, skill };
 		} catch (err) {
 			return fail(400, { message: err instanceof Error ? err.message : 'Invalid input.' });
 		}

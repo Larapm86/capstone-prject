@@ -1,9 +1,9 @@
 import { and, count, eq, gte, isNotNull, or } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { craving, userProfile } from '$lib/server/db/schema';
-import { MAX_LEVEL } from '$lib/constants/skills';
+import { MAX_SKILL } from '$lib/constants/skills';
 
-const LEVEL_RULES = {
+const SKILL_RULES = {
 	1: { required: 7, type: 'sessions' as const },
 	2: { required: 3, type: 'distinct_triggers' as const },
 	3: { required: 10, type: 'emotion_named' as const },
@@ -13,30 +13,30 @@ const LEVEL_RULES = {
 	7: { required: 20, type: 'days_conscious_30' as const } // 20 of 30 days; for display only
 } as const;
 
-/** Get user level (1–7). Ensures profile exists (level 1) for new users. */
-export async function getLevel(userId: string): Promise<number> {
+/** Get user skill step (1–7). Ensures profile exists (skill 1) for new users. */
+export async function getSkill(userId: string): Promise<number> {
 	await ensureUserProfile(userId);
-	const rows = await db.select({ level: userProfile.level }).from(userProfile).where(eq(userProfile.userId, userId));
-	return rows[0]?.level ?? 1;
+	const rows = await db.select({ skill: userProfile.skill }).from(userProfile).where(eq(userProfile.userId, userId));
+	return rows[0]?.skill ?? 1;
 }
 
-/** Ensure user has a profile row (level 1). Idempotent. */
+/** Ensure user has a profile row (skill 1). Idempotent. */
 export async function ensureUserProfile(userId: string): Promise<void> {
-	await db.insert(userProfile).values({ userId, level: 1 }).onConflictDoNothing({ target: userProfile.userId });
+	await db.insert(userProfile).values({ userId, skill: 1 }).onConflictDoNothing({ target: userProfile.userId });
 }
 
-/** Get progress toward the next level for the given level. */
-export async function getProgressForLevel(
+/** Get progress toward the next skill for the given skill step. */
+export async function getProgressForSkill(
 	userId: string,
-	level: number
+	skill: number
 ): Promise<{ current: number; required: number; label: string }> {
-	if (level >= MAX_LEVEL) {
-		// L7: show 20/30 days
+	if (skill >= MAX_SKILL) {
+		// Skill 7: show 20/30 days
 		const days = await countConsciousDaysInLast30(userId);
 		return { current: days, required: 20, label: 'days with conscious response (last 30)' };
 	}
 
-	const rule = LEVEL_RULES[level as keyof typeof LEVEL_RULES];
+	const rule = SKILL_RULES[skill as keyof typeof SKILL_RULES];
 	if (!rule) return { current: 0, required: 1, label: 'sessions' };
 
 	switch (rule.type) {
@@ -120,16 +120,16 @@ async function countConsciousDaysInLast30(userId: string): Promise<number> {
 	return days.size;
 }
 
-/** Check if the user has satisfied the rule for the next level; if so, bump level. Call after inserting a craving. */
-export async function evaluateAndBumpLevel(userId: string): Promise<number> {
+/** If the user has satisfied the rule for the next skill, bump skill. Call after inserting a craving. */
+export async function evaluateAndBumpSkill(userId: string): Promise<number> {
 	await ensureUserProfile(userId);
-	const current = await getLevel(userId);
-	if (current >= MAX_LEVEL) return current;
+	const current = await getSkill(userId);
+	if (current >= MAX_SKILL) return current;
 
-	const { current: progress, required } = await getProgressForLevel(userId, current);
+	const { current: progress, required } = await getProgressForSkill(userId, current);
 	if (progress < required) return current;
 
-	const newLevel = current + 1;
-	await db.update(userProfile).set({ level: newLevel, updatedAt: new Date() }).where(eq(userProfile.userId, userId));
-	return newLevel;
+	const nextSkill = current + 1;
+	await db.update(userProfile).set({ skill: nextSkill, updatedAt: new Date() }).where(eq(userProfile.userId, userId));
+	return nextSkill;
 }

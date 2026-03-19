@@ -7,12 +7,13 @@ export const task = pgTable('task', {
 	priority: integer('priority').notNull().default(1)
 });
 
-/** User progression: level 1–7, updated when progression rules are met. */
+/** User progression: skill step 1–7, updated when progression rules are met. */
 export const userProfile = pgTable('user_profile', {
 	userId: text('user_id')
 		.primaryKey()
 		.references(() => user.id, { onDelete: 'cascade' }),
-	level: integer('level').notNull().default(1),
+	/** User’s skill step 1–7. DB column is `level` (matches migration 0002). */
+	skill: integer('level').notNull().default(1),
 	updatedAt: timestamp('updated_at')
 		.defaultNow()
 		.$onUpdate(() => new Date())
@@ -28,7 +29,9 @@ export const craving = pgTable(
 			.references(() => user.id, { onDelete: 'cascade' }),
 		text: text('text').notNull(),
 		createdAt: timestamp('created_at').defaultNow().notNull(),
-		// Level-gated fields (nullable; only filled for sessions at that level)
+		/** Skill step (1–7) the user was on when this reflection was logged; null = legacy row (infer in UI). */
+		reflectSkill: integer('reflect_skill'),
+		// Skill-gated fields (nullable; only filled for sessions at that skill step)
 		triggers: text('triggers').array(),
 		emotion: text('emotion'),
 		familiar: text('familiar'), // 'yes' | 'maybe' | 'not_really'

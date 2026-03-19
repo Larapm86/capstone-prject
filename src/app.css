@@ -87,6 +87,14 @@ main,
 	padding: var(--page-padding);
 }
 
+/*
+ * Insights (/stats) & Skills (/settings): overlay + sky layers live inside main.
+ * Without this, --max-width (36rem) pillarboxes the whole screen on desktop.
+ */
+main.app-page.screen-content:has(.overlay-screen) {
+	max-width: none;
+}
+
 /* Touch-friendly controls */
 button,
 a.button,

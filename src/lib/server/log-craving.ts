@@ -1,7 +1,8 @@
 import { count, eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { craving } from '$lib/server/db/schema';
-import { evaluateAndBumpLevel } from '$lib/server/level';
+import { isReflectSkillColumnMissingError } from '$lib/server/craving-queries';
+import { evaluateAndBumpSkill, getSkill } from '$lib/server/skill';
 
 const MAX_CRAVING_LENGTH = 500;
 
@@ -17,14 +18,15 @@ export interface LogCravingPayload {
 }
 
 /**
- * Insert a craving and run progression. Returns new cravingCount and level.
+ * Insert a craving and run progression. Returns new cravingCount and skill.
  */
-export async function logCraving(userId: string, payload: LogCravingPayload): Promise<{ cravingCount: number; level: number }> {
+export async function logCraving(userId: string, payload: LogCravingPayload): Promise<{ cravingCount: number; skill: number }> {
 	const { text, triggers, emotion, familiar, mindSaying, needs, choice, beforeDuringAfter } = payload;
 	if (!text || text.length > MAX_CRAVING_LENGTH) {
 		throw new Error(text ? `Keep it under ${MAX_CRAVING_LENGTH} characters.` : "Please enter what you're craving.");
 	}
-	await db.insert(craving).values({
+	const reflectSkill = await getSkill(userId);
+	const baseRow = {
 		userId,
 		text: text.trim(),
 		triggers: triggers?.length ? triggers : null,
@@ -34,11 +36,19 @@ export async function logCraving(userId: string, payload: LogCravingPayload): Pr
 		needs: needs?.length ? needs : null,
 		choice: choice || null,
 		beforeDuringAfter: beforeDuringAfter?.trim() || null
-	});
-	const level = await evaluateAndBumpLevel(userId);
+	};
+	try {
+		await db.insert(craving).values({ ...baseRow, reflectSkill });
+	} catch (error) {
+		if (!isReflectSkillColumnMissingError(error)) {
+			throw error;
+		}
+		await db.insert(craving).values(baseRow);
+	}
+	const skill = await evaluateAndBumpSkill(userId);
 	const rows = await db.select({ value: count(craving.id) }).from(craving).where(eq(craving.userId, userId));
 	const cravingCount = Number(rows[0]?.value ?? 0);
-	return { cravingCount, level };
+	return { cravingCount, skill };
 }
 
 /** Parse form data into LogCravingPayload. */

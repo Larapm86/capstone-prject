@@ -2,7 +2,8 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import { craving } from '$lib/server/db/schema';
-import { and, desc, eq } from 'drizzle-orm';
+import { loadUserCravingsNewestFirst } from '$lib/server/craving-queries';
+import { and, eq } from 'drizzle-orm';
 
 /** Most frequent value in array; returns null if empty. */
 function mode(values: (string | null | undefined)[]): string | null {
@@ -29,10 +30,7 @@ export const load: PageServerLoad = async (event) => {
 	if (!event.locals.user) {
 		return redirect(302, '/login');
 	}
-	const cravings = await db.query.craving.findMany({
-		where: eq(craving.userId, event.locals.user.id),
-		orderBy: desc(craving.createdAt)
-	});
+	const cravings = await loadUserCravingsNewestFirst(event.locals.user.id);
 
 	const triggersFlat = cravings.flatMap((c) => c.triggers ?? []);
 	const emotionsFlat = cravings.map((c) => c.emotion).filter(Boolean);

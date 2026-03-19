@@ -2,15 +2,15 @@ import { redirect } from '@sveltejs/kit';
 import type { Actions } from './$types';
 import type { PageServerLoad } from './$types';
 import { auth } from '$lib/server/auth';
-import { getLevel, getProgressForLevel } from '$lib/server/level';
+import { getSkill, getProgressForSkill } from '$lib/server/skill';
 
 export const load: PageServerLoad = async (event) => {
 	if (!event.locals.user) {
 		return redirect(302, '/login');
 	}
-	const level = await getLevel(event.locals.user.id);
-	const progress = await getProgressForLevel(event.locals.user.id, level);
-	return { level, progress };
+	const skill = await getSkill(event.locals.user.id);
+	const progress = await getProgressForSkill(event.locals.user.id, skill);
+	return { skill, progress };
 };
 
 export const actions: Actions = {

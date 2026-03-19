@@ -1,36 +1,66 @@
 <script lang="ts">
-	import { goto, invalidate } from '$app/navigation';
+	import { get } from 'svelte/store';
+	import { page } from '$app/stores';
+	import { goto, invalidateAll } from '$app/navigation';
 	import CravingForm from '$lib/components/craving-form/CravingForm.svelte';
+	import { loggedCelebration } from '$lib/stores/loggedCelebration';
 	import { hasNewCravingForStats } from '$lib/stores/newCraving';
-	import { levelOverride } from '$lib/stores/levelOverride';
+	import { skillOverride } from '$lib/stores/skillOverride';
 	import type { ActionData, PageData } from './$types';
+
+	/** Home page reads this to run the same firefly / tooltip sequence as after logging on Reflect. */
+	const CRAVING_RETURN_KEY = 'becom-craving-return';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 	let trackFormMessage = $state<string | null>(null);
-	let showWinState = $state(false);
-	let winStateExiting = $state(false);
 	let submitting = $state(false);
 
-	const level = $derived($levelOverride ?? data?.level ?? 1);
+	const currentSkill = $derived($skillOverride ?? data?.skill ?? 1);
 
 	const WIN_STATE_DURATION_MS = 1300;
 	const WIN_STATE_FADEOUT_MS = 450;
 	const ERROR_DISPLAY_MS = 5000;
 
-	async function handleResult(result: { type: string; data?: { success?: boolean; message?: string } }) {
+	async function handleResult(result: {
+		type: string;
+		data?: { success?: boolean; message?: string; skill?: number };
+	}) {
+		/* Fresh layout skill (merged $page.data), not a stale prop snapshot */
+		const prevSkill = Number(get(page).data?.skill ?? data?.skill ?? 1) || 1;
 		trackFormMessage = result.data?.message ?? null;
-		if (result.type === 'success' && result.data?.success) {
-			showWinState = true;
+		const payload = result.data;
+		const ok =
+			result.type === 'success' &&
+			payload &&
+			typeof payload === 'object' &&
+			((payload as { success?: boolean }).success === true ||
+				typeof (payload as { skill?: number }).skill === 'number');
+		if (ok) {
+			const newSkill = (payload as { skill?: number }).skill ?? prevSkill;
+			/* Layout-owned overlay survives this page unmounting on goto('/') */
+			loggedCelebration.set({ active: true, exiting: false });
 			hasNewCravingForStats.set(true);
 			if (typeof sessionStorage !== 'undefined') {
 				sessionStorage.setItem('becom-new-craving', '1');
+				sessionStorage.setItem(
+					CRAVING_RETURN_KEY,
+					JSON.stringify({
+						skillLeveledUp: newSkill > prevSkill,
+						newSkillAfterLog: newSkill
+					})
+				);
 			}
 			setTimeout(() => {
-				winStateExiting = true;
+				loggedCelebration.set({ active: true, exiting: true });
 				setTimeout(async () => {
-					// Refetch layout (level, progress) before navigating so pill shows updated progress when user lands
-					await invalidate();
-					goto('/');
+					try {
+						await invalidateAll();
+						await goto('/', { replaceState: true });
+					} catch (e) {
+						console.warn('after log craving navigation', e);
+					} finally {
+						loggedCelebration.set({ active: false, exiting: false });
+					}
 				}, WIN_STATE_FADEOUT_MS);
 			}, WIN_STATE_DURATION_MS);
 		} else if (result.type === 'failure') {
@@ -51,23 +81,22 @@
 	</header>
 	<div class="craving-content">
 		<CravingForm
-			level={level}
+			skill={currentSkill}
 			action="?/logCraving"
 			noRedirect={true}
-			submitLabel="Reflect it"
+			submitLabel="Reflect"
 			bind:submitting
 			errorMessage={trackFormMessage}
-			onResult={(result) => handleResult(result as { type: string; data?: { success?: boolean; message?: string } })}
+			onResult={(result) =>
+				handleResult(
+					result as {
+						type: string;
+						data?: { success?: boolean; message?: string; skill?: number; cravingCount?: number };
+					}
+				)}
 		/>
 	</div>
 </div>
-
-{#if showWinState}
-	<div class="win-state" class:exiting={winStateExiting} role="status" aria-live="polite">
-		<span class="win-check">✓</span>
-		<p class="win-text">Logged</p>
-	</div>
-{/if}
 
 <style>
 	.craving-page {
@@ -154,48 +183,5 @@
 		max-width: 100%;
 		flex: 1;
 		min-height: 0;
-	}
-	.win-state {
-		position: fixed;
-		inset: 0;
-		background: #fff;
-		z-index: 10;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		gap: 0.75rem;
-		animation: win-fade 0.3s ease;
-	}
-	.win-state.exiting {
-		opacity: 0;
-		transition: opacity 0.4s ease-out;
-		pointer-events: none;
-	}
-	@keyframes win-fade {
-		from {
-			opacity: 0;
-		}
-		to {
-			opacity: 1;
-		}
-	}
-	.win-check {
-		width: 4rem;
-		height: 4rem;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: #011f3b;
-		color: #fff;
-		font-size: 2rem;
-		font-weight: 600;
-		border-radius: 50%;
-	}
-	.win-text {
-		font-size: 1.25rem;
-		font-weight: 600;
-		color: #011f3b;
-		margin: 0;
 	}
 </style>

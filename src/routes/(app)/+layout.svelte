@@ -1,14 +1,30 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
+	import { loggedCelebration } from '$lib/stores/loggedCelebration';
 	import { reflectHoldState } from '$lib/stores/reflectHold';
 	import { stars } from '$lib/starsData';
 	import ReflectProgressPill from '$lib/components/ReflectProgressPill.svelte';
 
-	let { data, children }: { data: { level?: number; progress?: { current: number; required: number; label: string } }; children: import('svelte').Snippet } = $props();
+	let { data, children }: { data: { skill?: number; progress?: { current: number; required: number; label: string } }; children: import('svelte').Snippet } = $props();
 	let shootingStarRun = $state(false);
 	let shootingStarTimeout: ReturnType<typeof setTimeout> | null = null;
 	let landing = $state(false);
+	/** Block bottom bar briefly after /craving → / so the same tap doesn’t hit the Skills link (ghost click). */
+	let bottomBarNavFrozen = $state(false);
+	let bottomBarFreezeTimer: ReturnType<typeof setTimeout> | null = null;
+
+	afterNavigate(({ from, to }) => {
+		if (from?.url.pathname === '/craving' && to?.url.pathname === '/') {
+			if (bottomBarFreezeTimer) clearTimeout(bottomBarFreezeTimer);
+			bottomBarNavFrozen = true;
+			bottomBarFreezeTimer = setTimeout(() => {
+				bottomBarNavFrozen = false;
+				bottomBarFreezeTimer = null;
+			}, 1200);
+		}
+	});
 
 	function scheduleShootingStar() {
 		const delay = 8000 + Math.random() * 22000;
@@ -57,7 +73,6 @@
 	class="cravings-shell"
 	class:landing
 	class:craving-route={$page.url.pathname === '/craving'}
-	class:shell-stars-above-main={$page.url.pathname === '/stats' || $page.url.pathname === '/settings'}
 >
 	{#if $page.url.pathname !== '/craving' && $page.url.pathname !== '/stats' && $page.url.pathname !== '/settings' && !($page.url.pathname === '/' && $reflectHoldState?.phase === 'complete')}
 		<header class="app-nav-chrome shell-top-chrome" aria-label="Account">
@@ -110,30 +125,32 @@
 			</div>
 		</div>
 	{/if}
-	{#if $page.url.pathname === '/stats' || $page.url.pathname === '/settings'}
-		<!-- Stars background on Insights and Me (Reflect has its own in reflect-bg-layer) -->
-		<div class="milky-band" aria-hidden="true"></div>
-		<div class="stars" aria-hidden="true">
-			{#each stars as star}
-				<span
-					class="star star--s{star.s}"
-					style="left: {star.x}%; top: {star.y}%; animation-delay: {star.d}s; --brightness: {star.b};"
-				></span>
-			{/each}
-		</div>
-		<div class="shooting-star" class:run={shootingStarRun} aria-hidden="true">
-			<span class="shooting-star-streak"></span>
-		</div>
-	{/if}
-
 	<main class="app-page screen-content">
-		<div class="page-transition-container">
+		<div
+			class="page-transition-container"
+			class:page-transition-container--craving={$page.url.pathname === '/craving'}
+		>
 			{#if $page.url.pathname === '/stats' || $page.url.pathname === '/settings'}
-				<!-- Opaque sky under route content so cross-route fades don't show Reflect / gaps; stars stay z-50 above -->
+				<!-- Sky + stars sit *between* shell gradient and scroll content so stars stay visible -->
 				<div class="page-transition-sky-fill" aria-hidden="true"></div>
+				<div class="milky-band milky-band--insights" aria-hidden="true"></div>
+				<div class="stars stars--insights" aria-hidden="true">
+					{#each stars as star}
+						<span
+							class="star star--s{star.s}"
+							style="left: {star.x}%; top: {star.y}%; animation-delay: {star.d}s; --brightness: {star.b};"
+						></span>
+					{/each}
+				</div>
+				<div class="shooting-star shooting-star--insights" class:run={shootingStarRun} aria-hidden="true">
+					<span class="shooting-star-streak"></span>
+				</div>
 			{/if}
 			{#key $page.url.pathname}
-				<div class="page-transition-wrap">
+				<div
+					class="page-transition-wrap"
+					class:page-transition-wrap--craving={$page.url.pathname === '/craving'}
+				>
 					{@render children()}
 				</div>
 			{/key}
@@ -141,14 +158,30 @@
 	</main>
 
 	{#if $page.url.pathname !== '/craving'}
-		<div class="bottom-bar-outer">
+		<div
+			class="bottom-bar-outer"
+			class:bottom-bar-outer--nav-frozen={bottomBarNavFrozen || $loggedCelebration.active}
+		>
 			<div
 				class="bottom-bar reflect-progress-bar"
 				class:active={$page.url.pathname === '/'}
 				aria-hidden={$page.url.pathname !== '/'}
 			>
-				<ReflectProgressPill level={data?.level} progress={data?.progress} />
+				<ReflectProgressPill skill={data?.skill} progress={data?.progress} />
 			</div>
+		</div>
+	{/if}
+
+	{#if $loggedCelebration.active}
+		<div
+			class="logged-celebration"
+			class:logged-celebration--exiting={$loggedCelebration.exiting}
+			role="status"
+			aria-live="polite"
+			aria-label="Craving logged"
+		>
+			<span class="logged-celebration__check" aria-hidden="true">✓</span>
+			<p class="logged-celebration__text">Logged</p>
 		</div>
 	{/if}
 </div>
@@ -322,16 +355,18 @@
 		}
 	}
 	.milky-band {
-		position: fixed;
-		inset: 0;
-		z-index: 0;
 		pointer-events: none;
 		background: var(--gradient-milky-band);
 	}
-	.stars {
-		position: fixed;
+	/* Insights / Me: layers inside page-transition-container (above sky-fill, below scroll content) */
+	.milky-band--insights,
+	.stars--insights,
+	.shooting-star--insights {
+		position: absolute;
 		inset: 0;
-		z-index: 0;
+		z-index: 1;
+	}
+	.stars {
 		pointer-events: none;
 		overflow: hidden;
 	}
@@ -359,9 +394,6 @@
 		50% { opacity: var(--brightness, 0.9); transform: scale(1.15); }
 	}
 	.shooting-star {
-		position: fixed;
-		inset: 0;
-		z-index: 0;
 		pointer-events: none;
 		overflow: hidden;
 	}
@@ -377,16 +409,6 @@
 	}
 	.shooting-star.run .shooting-star-streak {
 		animation: shooting-star 0.5s ease-out forwards;
-	}
-	/*
-	 * Insights / Me: main + fixed overlay sit at z-index 1; default star layers are z-index 0
-	 * so they were fully hidden. Lift stars above main but below exit (99) and bottom bar (100).
-	 * pointer-events: none is already set on these layers.
-	 */
-	.cravings-shell.shell-stars-above-main .milky-band,
-	.cravings-shell.shell-stars-above-main .stars,
-	.cravings-shell.shell-stars-above-main .shooting-star {
-		z-index: 50;
 	}
 	@keyframes shooting-star {
 		0% {
@@ -431,6 +453,10 @@
 		min-height: 100%;
 		overflow: hidden;
 	}
+	/* /craving: fixed “Logged” overlay must not be clipped by overflow:hidden */
+	.page-transition-container--craving {
+		overflow: visible;
+	}
 	.page-transition-sky-fill {
 		position: absolute;
 		inset: 0;
@@ -441,11 +467,15 @@
 	.page-transition-wrap {
 		position: absolute;
 		inset: 0;
-		z-index: 1;
+		z-index: 2;
 		width: 100%;
 		min-height: 100%;
 		overflow-y: auto;
 		-webkit-overflow-scrolling: touch;
+	}
+	.page-transition-wrap--craving {
+		overflow: visible;
+		-webkit-overflow-scrolling: auto;
 	}
 	@media (min-width: 768px) {
 		.cravings-shell {
@@ -468,17 +498,70 @@
 		}
 		.page-transition-wrap {
 			position: relative;
-			z-index: 1;
+			z-index: 2;
 			min-height: 0;
 			overflow-y: visible;
 		}
 		.bottom-bar-outer {
 			bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
 		}
+		/* Sit the pill a bit higher on large screens (mobile keeps 1.75rem) */
+		.reflect-progress-bar {
+			bottom: calc(3rem + env(safe-area-inset-bottom, 0px));
+		}
+	}
+	.logged-celebration {
+		position: fixed;
+		inset: 0;
+		z-index: 2147483000;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 0.75rem;
+		background: #fff;
+		animation: logged-celebration-in 0.3s ease;
+		pointer-events: auto;
+		touch-action: none;
+	}
+	.logged-celebration--exiting {
+		opacity: 0;
+		transition: opacity 0.4s ease-out;
+		pointer-events: none;
+	}
+	@keyframes logged-celebration-in {
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
+	}
+	.logged-celebration__check {
+		width: 4rem;
+		height: 4rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: #011f3b;
+		color: #fff;
+		font-size: 2rem;
+		font-weight: 600;
+		border-radius: 50%;
+	}
+	.logged-celebration__text {
+		font-size: 1.25rem;
+		font-weight: 600;
+		color: #011f3b;
+		margin: 0;
+	}
+	.bottom-bar-outer--nav-frozen {
+		pointer-events: none;
 	}
 	.bottom-bar-outer {
 		position: fixed;
-		bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+		/* Mobile: sit a bit lower; desktop overrides in min-width: 768px */
+		bottom: calc(2.65rem + env(safe-area-inset-bottom, 0px));
 		left: 50%;
 		transform: translateX(-50%);
 		width: calc(100% - 2rem);
@@ -494,7 +577,7 @@
 		position: absolute;
 		left: 50%;
 		transform: translateX(-50%);
-		bottom: calc(1.75rem + env(safe-area-inset-bottom, 0px));
+		bottom: calc(1.35rem + env(safe-area-inset-bottom, 0px));
 		width: 100%;
 		max-width: 400px;
 		display: flex;

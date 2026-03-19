@@ -7,10 +7,10 @@
 		MIND_SAYING_SUGGESTIONS
 	} from '$lib/constants/craving-options';
 	import { SKILLS } from '$lib/constants/skills';
-	import { getStepsForLevel } from './steps-config';
+	import { getLoggingSubheadline, getStepsForSkill } from './steps-config';
 
 	interface Props {
-		level: number;
+		skill: number;
 		action: string;
 		noRedirect?: boolean;
 		submitLabel?: string;
@@ -20,20 +20,21 @@
 	}
 
 	let {
-		level = 1,
+		skill = 1,
 		action,
 		noRedirect = true,
-		submitLabel = 'Reflect it',
+		submitLabel = 'Reflect',
 		errorMessage = null,
 		submitting = $bindable(false),
 		onResult
 	}: Props = $props();
 
-	const steps = $derived(getStepsForLevel(level));
-	const skillName = $derived(SKILLS[Math.min(level, SKILLS.length) - 1]?.name ?? 'Reflect');
+	const steps = $derived(getStepsForSkill(skill));
+	const skillName = $derived(SKILLS[Math.min(skill, SKILLS.length) - 1]?.name ?? 'Reflect');
 	let stepIndexState = $state({ index: 0 });
 	const currentStepIndex = $derived(stepIndexState.index);
 	const currentStep = $derived(steps[currentStepIndex]);
+	const stepSubheadline = $derived(getLoggingSubheadline(currentStepIndex));
 
 	let text = $state('');
 	let triggers = $state<string[]>([]);
@@ -146,6 +147,9 @@
 	<div class="craving-form-scroll">
 		{#if currentStep?.stepKey === 'text'}
 			<label for="craving-form-text" class="step-label">{currentStep.label}</label>
+			{#if stepSubheadline}
+				<p class="step-subheadline" id="craving-form-step-sub">{stepSubheadline}</p>
+			{/if}
 			<input
 				id="craving-form-text"
 				type="text"
@@ -156,9 +160,13 @@
 				autocomplete="off"
 				maxlength={500}
 				class="step-input"
+				aria-describedby={stepSubheadline ? 'craving-form-step-sub' : undefined}
 			/>
 		{:else if currentStep?.stepKey === 'triggers'}
 			<label id="craving-step-label" class="step-label">{currentStep.label}</label>
+			{#if stepSubheadline}
+				<p class="step-subheadline" id="craving-form-step-sub">{stepSubheadline}</p>
+			{/if}
 			<div class="chips" role="group" aria-labelledby="craving-step-label">
 				{#each CRAVING_TRIGGERS as t}
 					<button
@@ -178,6 +186,9 @@
 			{/each}
 		{:else if currentStep?.stepKey === 'emotion'}
 			<label id="craving-emotion-label" class="step-label">{currentStep.label}</label>
+			{#if stepSubheadline}
+				<p class="step-subheadline" id="craving-form-step-sub">{stepSubheadline}</p>
+			{/if}
 			<div class="emotion-grid" role="group" aria-labelledby="craving-emotion-label">
 				{#each CRAVING_EMOTIONS as em}
 					<button
@@ -195,6 +206,9 @@
 			<input type="hidden" name="emotion" value={emotion} />
 		{:else if currentStep?.stepKey === 'familiar'}
 			<label id="craving-familiar-label" class="step-label">{currentStep.label}</label>
+			{#if stepSubheadline}
+				<p class="step-subheadline" id="craving-form-step-sub">{stepSubheadline}</p>
+			{/if}
 			<div class="cards-stack" role="group" aria-labelledby="craving-familiar-label">
 				<button type="button" class="card-option" class:selected={familiar === 'yes'} onclick={() => (familiar = 'yes')} aria-pressed={familiar === 'yes'} aria-label="Does this feel familiar? Yes">
 					Yes
@@ -216,6 +230,9 @@
 			<input type="hidden" name="familiar" value={familiar} />
 		{:else if currentStep?.stepKey === 'mindSaying'}
 			<label id="craving-mind-label" class="step-label">{currentStep.label} <span class="optional">(optional)</span></label>
+			{#if stepSubheadline}
+				<p class="step-subheadline" id="craving-form-step-sub">{stepSubheadline}</p>
+			{/if}
 			<div class="chips" role="group" aria-labelledby="craving-mind-label">
 				{#each MIND_SAYING_SUGGESTIONS as s}
 					<button
@@ -233,6 +250,9 @@
 			<input type="text" name="mindSaying" bind:value={mindSaying} class="step-input" placeholder="Or type something…" aria-label="What is your mind saying? (optional)" />
 		{:else if currentStep?.stepKey === 'needs'}
 			<label id="craving-needs-label" class="step-label">{currentStep.label}</label>
+			{#if stepSubheadline}
+				<p class="step-subheadline" id="craving-form-step-sub">{stepSubheadline}</p>
+			{/if}
 			<div class="chips" role="group" aria-labelledby="craving-needs-label">
 				{#each CRAVING_NEEDS as n}
 					<button type="button" class="chip" class:selected={needs.includes(n)} onclick={() => toggleNeed(n)} aria-pressed={needs.includes(n)} aria-label="Need: {n}">
@@ -245,6 +265,9 @@
 			{/each}
 		{:else if currentStep?.stepKey === 'choice'}
 			<label id="craving-choice-label" class="step-label">{currentStep.label}</label>
+			{#if stepSubheadline}
+				<p class="step-subheadline" id="craving-form-step-sub">{stepSubheadline}</p>
+			{/if}
 			<div class="cards-stack cards-equal" role="group" aria-labelledby="craving-choice-label">
 				<button type="button" class="card-option" class:selected={choice === 'redirect'} onclick={() => (choice = 'redirect')} aria-pressed={choice === 'redirect'} aria-label="Choice: Redirect">
 					Redirect
@@ -259,6 +282,9 @@
 			<input type="hidden" name="choice" value={choice} />
 		{:else if currentStep?.stepKey === 'beforeDuringAfter'}
 			<label id="craving-bda-label" class="step-label">{currentStep.label}</label>
+			{#if stepSubheadline}
+				<p class="step-subheadline" id="craving-form-step-sub">{stepSubheadline}</p>
+			{/if}
 			<div class="sliders" role="group" aria-labelledby="craving-bda-label">
 				<div class="slider-row">
 					<label for="craving-before" class="slider-label">Before</label>
@@ -377,12 +403,20 @@
 		-webkit-overflow-scrolling: touch;
 		padding: 0.75rem 8px 1.25rem;
 	}
+	.step-subheadline {
+		margin: -0.35rem 0 1rem 0;
+		font-size: 0.9375rem;
+		font-weight: 400;
+		line-height: 1.5;
+		color: var(--color-brand-navy-subtle);
+		font-family: var(--font-sans);
+	}
 	.step-label {
 		display: block;
 		font-size: 1.0625rem;
 		font-weight: 600;
 		color: var(--color-brand-navy);
-		margin-bottom: 0.875rem;
+		margin-bottom: 0.5rem;
 	}
 	.optional {
 		font-weight: 400;

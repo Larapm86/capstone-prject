@@ -22,6 +22,20 @@
       "when": 1773831497196,
       "tag": "0002_acoustic_bill_hollister",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1774100000000,
+      "tag": "0004_craving_reflect_skill",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1774200000000,
+      "tag": "0005_craving_reflect_skill_idempotent",
+      "breakpoints": true
     }
   ]
 }

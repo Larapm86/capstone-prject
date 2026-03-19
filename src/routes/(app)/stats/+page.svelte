@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
 	import { onMount } from 'svelte';
+	import CravingReflectionCard from '$lib/components/stats/CravingReflectionCard.svelte';
 	import { hasNewCravingForStats } from '$lib/stores/newCraving';
 	import type { PageData } from './$types';
 
@@ -15,9 +15,17 @@
 		hasNewCravingForStats.set(false);
 	});
 
-	const cravings = data?.cravings ?? [];
-	const insights = data?.insights ?? { sessionsCount: 0, topTrigger: null, topEmotion: null, mostCommonNeed: null };
-	const hasAnyData = cravings.length > 0;
+	/** Must be $derived so list updates after client navigation / invalidate (const would stay stuck on first value). */
+	const cravings = $derived(data?.cravings ?? []);
+	const insights = $derived(
+		data?.insights ?? {
+			sessionsCount: 0,
+			topTrigger: null,
+			topEmotion: null,
+			mostCommonNeed: null
+		}
+	);
+	const hasAnyData = $derived(cravings.length > 0);
 </script>
 
 <svelte:head>
@@ -36,74 +44,65 @@
 <section class="insights-section" aria-labelledby="insights-heading">
 	<h1 id="insights-heading" class="page-title">Insights</h1>
 
-	{#if !hasAnyData}
-		<p class="empty">No sessions yet. Switch to Reflect to log a craving and see your insights here.</p>
-	{:else}
-		<div class="insights-columns">
-			<!-- Left: top 4 metrics -->
-			<div class="insights-column-left">
-				<div class="insights-grid">
-					<div class="insight-card">
-						<span class="insight-label">Sessions</span>
-						<span class="insight-value">{insights.sessionsCount}</span>
-					</div>
-					<div class="insight-card">
-						<span class="insight-label">Top trigger</span>
-						{#if insights.topTrigger}
-							<span class="insight-value">{insights.topTrigger}</span>
-						{:else}
-							<span class="insight-empty">Opens when you are learning <span class="insight-empty-skill">Awareness</span></span>
-						{/if}
-					</div>
-					<div class="insight-card">
-						<span class="insight-label">Top emotion</span>
-						{#if insights.topEmotion}
-							<span class="insight-value">{insights.topEmotion}</span>
-						{:else}
-							<span class="insight-empty">Opens when you are learning <span class="insight-empty-skill">Literacy</span></span>
-						{/if}
-					</div>
-					<div class="insight-card">
-						<span class="insight-label">Most common need</span>
-						{#if insights.mostCommonNeed}
-							<span class="insight-value">{insights.mostCommonNeed}</span>
-						{:else}
-							<span class="insight-empty">Opens when you are learning <span class="insight-empty-skill">Acceptance</span></span>
-						{/if}
-					</div>
+	<div class="insights-columns">
+		<!-- Left: top 4 metrics (always visible so counts and skill hints show) -->
+		<div class="insights-column-left">
+			<div class="insights-grid">
+				<div class="insight-card">
+					<span class="insight-label">Sessions</span>
+					<span class="insight-value">{insights.sessionsCount}</span>
 				</div>
-			</div>
-			<!-- Right: craving list -->
-			<div class="insights-column-right">
-				<div class="craving-reflections">
-					<h2 class="craving-reflections__title">Craving reflections</h2>
-					<ul class="cravings-list">
-						{#each cravings as c (c.id)}
-							<li class="craving-item">
-								<div class="craving-main">
-									<span class="craving-text">
-										{c.text}
-										{#if showNewLabel && c.id === cravings[0]?.id}
-											<span class="new-label">New</span>
-										{/if}
-									</span>
-									<time class="craving-date" datetime={new Date(c.createdAt).toISOString()}>
-										{new Date(c.createdAt).toLocaleString()}
-									</time>
-								</div>
-								<form method="post" action="?/deleteCraving" use:enhance class="delete-form">
-									<input type="hidden" name="id" value={c.id} />
-									<button type="submit" class="delete-btn" aria-label="Delete this craving">Delete</button>
-								</form>
-							</li>
-						{/each}
-					</ul>
+				<div class="insight-card">
+					<span class="insight-label">Top trigger</span>
+					{#if insights.topTrigger}
+						<span class="insight-value">{insights.topTrigger}</span>
+					{:else}
+						<span class="insight-empty">Opens when you are learning <span class="insight-empty-skill">Awareness</span></span>
+					{/if}
+				</div>
+				<div class="insight-card">
+					<span class="insight-label">Top emotion</span>
+					{#if insights.topEmotion}
+						<span class="insight-value">{insights.topEmotion}</span>
+					{:else}
+						<span class="insight-empty">Opens when you are learning <span class="insight-empty-skill">Literacy</span></span>
+					{/if}
+				</div>
+				<div class="insight-card">
+					<span class="insight-label">Most common need</span>
+					{#if insights.mostCommonNeed}
+						<span class="insight-value">{insights.mostCommonNeed}</span>
+					{:else}
+						<span class="insight-empty">Opens when you are learning <span class="insight-empty-skill">Acceptance</span></span>
+					{/if}
 				</div>
 			</div>
 		</div>
-		{#if form?.message && form?.success !== true}
-			<p class="form-error" role="alert">{form.message}</p>
-		{/if}
+		<!-- Right: craving list or empty hint -->
+		<div class="insights-column-right">
+			<div class="craving-reflections">
+				<h2 class="craving-reflections__title">Craving reflections</h2>
+				{#if hasAnyData}
+					<ul class="cravings-list">
+						{#each cravings as c (c.id)}
+							<li class="craving-item">
+								<CravingReflectionCard
+									craving={c}
+									showNew={showNewLabel && c.id === cravings[0]?.id}
+								/>
+							</li>
+						{/each}
+					</ul>
+				{:else}
+					<p class="empty reflections-empty">
+						No reflections yet.
+					</p>
+				{/if}
+			</div>
+		</div>
+	</div>
+	{#if form?.message && form?.success !== true}
+		<p class="form-error" role="alert">{form.message}</p>
 	{/if}
 </section>
 	</div>
@@ -119,12 +118,20 @@
 	 * - insights-column-right: craving list; list items padding 0.75rem 0, gap 0.75rem; craving-main gap 0.25rem
 	 */
 	.overlay-screen {
+		/* Viewport-fixed: absolute + short parent (desktop min-height:0) only covered the “middle” band */
 		position: fixed;
 		inset: 0;
-		background: var(--bg);
+		width: 100%;
+		max-width: 100vw;
+		min-height: 100vh;
+		min-height: 100dvh;
+		height: 100dvh;
+		box-sizing: border-box;
+		/* Transparent so layout sky + star layers show through (see +layout.svelte) */
+		background: transparent;
 		display: flex;
 		flex-direction: column;
-		z-index: 101;
+		z-index: 120;
 		padding: 0 0 calc(1rem + env(safe-area-inset-bottom, 0px)) 0;
 		touch-action: manipulation;
 		-webkit-tap-highlight-color: transparent;
@@ -211,6 +218,10 @@
 		color: var(--text-muted);
 		margin: 0;
 	}
+	.reflections-empty {
+		max-width: 28rem;
+		line-height: 1.45;
+	}
 	.insights-grid {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
@@ -267,60 +278,18 @@
 		font-weight: 600;
 		margin: 0 0 0.5rem 0;
 	}
-	.new-label {
-		display: inline-block;
-		margin-left: 0.5rem;
-		font-size: 0.75rem;
-		font-weight: 500;
-		color: var(--text-muted);
-	}
 	.craving-reflections .cravings-list {
 		list-style: none;
 		padding: 0;
 		margin: 0;
-	}
-	.cravings-list li {
-		padding: 0.75rem 0;
-		border-bottom: 1px solid var(--border);
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 0.75rem;
-	}
-	.cravings-list li:last-child {
-		border-bottom: none;
-	}
-	.craving-item .craving-main {
 		display: flex;
 		flex-direction: column;
-		gap: 0.25rem;
-		flex: 1;
-		min-width: 0;
+		gap: 1.25rem;
 	}
-	.craving-text {
-		font-weight: 500;
-	}
-	.craving-date {
-		font-size: 0.875rem;
-		color: var(--text-muted);
-	}
-	.delete-form {
-		flex-shrink: 0;
-	}
-	.delete-btn {
-		padding: 0.35rem 0.6rem;
-		font-size: 0.8125rem;
-		font-weight: 500;
-		color: var(--error);
-		background: transparent;
-		border: 1px solid var(--border);
-		border-radius: 0.5rem;
-		cursor: pointer;
-		touch-action: manipulation;
-		-webkit-tap-highlight-color: transparent;
-	}
-	.delete-btn:hover {
-		background: var(--surface-danger-soft);
+	.cravings-list .craving-item {
+		padding: 0;
+		margin: 0;
+		list-style: none;
 	}
 	.form-error {
 		margin-top: 0.75rem;

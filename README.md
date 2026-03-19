@@ -18,6 +18,18 @@ To recreate this project with the same configuration:
 pnpm dlx sv@0.12.7 create --template minimal --types ts --add prettier eslint vitest="usages:unit,component" playwright sveltekit-adapter="adapter:netlify" drizzle="database:postgresql+postgresql:neon" better-auth="demo:password" --install pnpm .
 ```
 
+## Database
+
+Set `DATABASE_URL` (e.g. Neon). Apply migrations after pulling:
+
+```sh
+pnpm db:migrate
+# or sync schema without migration files:
+pnpm db:push
+```
+
+If **Insights (`/stats`) returns 500**, the `craving` table is usually missing `reflect_skill`. Migration `0005` adds it with `IF NOT EXISTS`; run `pnpm db:migrate` on your database.
+
 ## Developing
 
 Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:

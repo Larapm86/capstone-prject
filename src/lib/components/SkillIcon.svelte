@@ -1,16 +1,16 @@
 <script lang="ts">
-	/** Level 1–7; determines which Becom skill icon is shown. */
+	/** Skill step 1–7; determines which Becom skill icon is shown. */
 	interface Props {
-		level: number;
+		skill: number;
 		/** Visual state: current (active), completed, or locked. Affects color via CSS. */
 		state?: 'current' | 'completed' | 'locked';
 	}
-	let { level = 1, state = 'completed' }: Props = $props();
+	let { skill = 1, state = 'completed' }: Props = $props();
 
-	const index = $derived(Math.max(0, Math.min(level - 1, 6)));
+	const index = $derived(Math.max(0, Math.min(skill - 1, 6)));
 </script>
 
-<div class="skill-icon" class:current={state === 'current'} class:completed={state === 'completed'} class:locked={state === 'locked'} data-level={level} aria-hidden="true">
+<div class="skill-icon" class:current={state === 'current'} class:completed={state === 'completed'} class:locked={state === 'locked'} data-skill={skill} aria-hidden="true">
 	{#if index === 0}
 		<!-- L1 Acknowledgement: pause / observe -->
 		<svg class="skill-icon__svg" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
