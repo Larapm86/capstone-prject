@@ -1,12 +1,14 @@
 <script lang="ts">
 	import { get } from 'svelte/store';
 	import { onMount, tick } from 'svelte';
+	import { base } from '$app/paths';
 	import { page } from '$app/stores';
 	import { goto, invalidateAll } from '$app/navigation';
 	import CravingForm from '$lib/components/craving-form/CravingForm.svelte';
 	import BecomLogo from '$lib/components/BecomLogo.svelte';
 	import { MAX_SKILL, SKILLS } from '$lib/constants/skills';
 	import { dismissLoggedCelebration, loggedCelebration } from '$lib/stores/loggedCelebration';
+	import { armPostCravingNavGuard } from '$lib/stores/postCravingNavGuard';
 	import { hasNewCravingForStats } from '$lib/stores/newCraving';
 	import { skillOverride } from '$lib/stores/skillOverride';
 	import { reflectHoldState } from '$lib/stores/reflectHold';
@@ -97,12 +99,11 @@
 		}
 	});
 
-	/** Form action for craving log – absolute URL so mobile/PWA always posts to the right route. Guard for SSR/mobile. */
-	const logCravingAction = $derived.by(() => {
-		const url = $page?.url;
-		if (!url) return '/?/logCraving';
-		return (url.origin || '') + (url.pathname || '/') + '?/logCraving';
-	});
+	/**
+	 * Reflect white-screen (desktop) must post to this app’s root action — same as /craving uses `?/logCraving`.
+	 * Use path + base only (no `origin`) so desktop PWAs / embedded shells don’t mis-resolve absolute URLs.
+	 */
+	const logCravingAction = $derived(`${base}/?/logCraving`);
 	/** Hold button is always shown (no "Tap to open" intro). */
 	let introOpened = $state(true);
 	let introLanding = $state(false);
@@ -412,16 +413,23 @@
 		const msg = result.data?.message ?? (result.type === 'error' && result.error instanceof Error ? result.error.message : null);
 		trackFormMessage = msg ?? (result.type === 'failure' || result.type === 'error' ? 'Something went wrong. Try again.' : null);
 		const payload = result.data;
+		const rawSkill = payload && typeof payload === 'object' ? (payload as { skill?: unknown }).skill : undefined;
+		const newSkillNum =
+			typeof rawSkill === 'number' && Number.isFinite(rawSkill)
+				? rawSkill
+				: typeof rawSkill === 'string' && rawSkill !== ''
+					? Number(rawSkill)
+					: NaN;
 		const successPayload =
 			result.type === 'success' &&
 			payload &&
 			typeof payload === 'object' &&
-			((payload as { success?: boolean }).success === true ||
-				typeof (payload as { skill?: number }).skill === 'number');
+			((payload as { success?: boolean }).success === true || Number.isFinite(newSkillNum));
 		if (successPayload) {
+			armPostCravingNavGuard();
 			loggedCelebration.set({ active: true, exiting: false });
 			const prevSkill = Number(get(page).data?.skill ?? data?.skill ?? 1) || 1;
-			const newSkill = (payload as { skill?: number }).skill ?? prevSkill;
+			const newSkill = Number.isFinite(newSkillNum) ? newSkillNum : prevSkill;
 			const skillLeveledUp = newSkill > prevSkill;
 			setTimeout(() => {
 				loggedCelebration.set({ active: true, exiting: true });
@@ -1099,12 +1107,12 @@
 		transition: transform 0.2s ease-out, opacity 0.25s ease-out;
 		pointer-events: none;
 	}
-	/* Portaled to body so it always appears on top (fixes mobile where layout can hide it) */
+	/* Below layout “Logged” overlay (see +layout .logged-celebration z-index) */
 	.white-screen {
 		position: fixed;
 		inset: 0;
 		background: var(--color-surface-paper);
-		z-index: 2147483647;
+		z-index: 2147483640;
 		opacity: 0;
 		transition: opacity 0.5s ease-out;
 		display: flex;
@@ -1123,7 +1131,8 @@
 	.white-screen.visible.exiting {
 		opacity: 0;
 		transition: opacity 0.4s ease-out;
-		pointer-events: none;
+		/* Don’t let mouseup/click fall through to the progress pill (desktop ghost navigation). */
+		pointer-events: auto;
 	}
 	/* Hide form as soon as "Logged" is shown so it never flashes again during fade-out */
 	.white-screen.visible.hide-content .white-screen-content,

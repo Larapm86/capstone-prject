@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { afterNavigate } from '$app/navigation';
+	import { afterNavigate, beforeNavigate } from '$app/navigation';
+	import { get } from 'svelte/store';
 	import { page } from '$app/stores';
 	import { loggedCelebration } from '$lib/stores/loggedCelebration';
+	import { postCravingNavGuardActive } from '$lib/stores/postCravingNavGuard';
 	import { reflectHoldState } from '$lib/stores/reflectHold';
 	import { stars } from '$lib/starsData';
 	import ReflectProgressPill from '$lib/components/ReflectProgressPill.svelte';
@@ -22,8 +24,20 @@
 			bottomBarFreezeTimer = setTimeout(() => {
 				bottomBarNavFrozen = false;
 				bottomBarFreezeTimer = null;
-			}, 1200);
+			}, 2000);
 		}
+	});
+
+	/** Same tap that submitted Reflect must not trigger Skills/Insights (child had pointer-events: auto). */
+	beforeNavigate(({ to, cancel }) => {
+		const path = to?.url.pathname ?? '';
+		if (path !== '/settings' && path !== '/stats') return;
+		const block =
+			bottomBarNavFrozen ||
+			get(postCravingNavGuardActive) ||
+			get(loggedCelebration).active ||
+			get(reflectHoldState).phase === 'complete';
+		if (block) cancel();
 	});
 
 	function scheduleShootingStar() {
@@ -160,7 +174,10 @@
 	{#if $page.url.pathname !== '/craving'}
 		<div
 			class="bottom-bar-outer"
-			class:bottom-bar-outer--nav-frozen={bottomBarNavFrozen || $loggedCelebration.active}
+			class:bottom-bar-outer--nav-frozen={bottomBarNavFrozen ||
+				$loggedCelebration.active ||
+				$postCravingNavGuardActive ||
+				$reflectHoldState.phase === 'complete'}
 		>
 			<div
 				class="bottom-bar reflect-progress-bar"
@@ -510,10 +527,11 @@
 			bottom: calc(3rem + env(safe-area-inset-bottom, 0px));
 		}
 	}
+	/* Above Reflect white-screen dialog (see +page.svelte .white-screen) so “Logged” is visible */
 	.logged-celebration {
 		position: fixed;
 		inset: 0;
-		z-index: 2147483000;
+		z-index: 2147483647;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
@@ -527,7 +545,8 @@
 	.logged-celebration--exiting {
 		opacity: 0;
 		transition: opacity 0.4s ease-out;
-		pointer-events: none;
+		/* Keep capturing taps until unmounted — pointer-events: none let clicks hit the pill below */
+		pointer-events: auto;
 	}
 	@keyframes logged-celebration-in {
 		from {
@@ -557,6 +576,11 @@
 	}
 	.bottom-bar-outer--nav-frozen {
 		pointer-events: none;
+	}
+	/* Direct child forces pointer-events: auto; must override when frozen or freeze is a no-op */
+	.bottom-bar-outer--nav-frozen > .bottom-bar,
+	.bottom-bar-outer--nav-frozen > .reflect-progress-bar {
+		pointer-events: none !important;
 	}
 	.bottom-bar-outer {
 		position: fixed;

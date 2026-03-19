@@ -3,7 +3,8 @@
 	import { page } from '$app/stores';
 	import { goto, invalidateAll } from '$app/navigation';
 	import CravingForm from '$lib/components/craving-form/CravingForm.svelte';
-	import { loggedCelebration } from '$lib/stores/loggedCelebration';
+	import { dismissLoggedCelebration, loggedCelebration } from '$lib/stores/loggedCelebration';
+	import { armPostCravingNavGuard } from '$lib/stores/postCravingNavGuard';
 	import { hasNewCravingForStats } from '$lib/stores/newCraving';
 	import { skillOverride } from '$lib/stores/skillOverride';
 	import type { ActionData, PageData } from './$types';
@@ -17,8 +18,11 @@
 
 	const currentSkill = $derived($skillOverride ?? data?.skill ?? 1);
 
+	/** Full-opacity “Logged” on /craving before navigating home */
 	const WIN_STATE_DURATION_MS = 1300;
-	const WIN_STATE_FADEOUT_MS = 450;
+	/** Keep “Logged” visible on Reflect after navigation, then fade out */
+	const POST_LOG_HOME_HOLD_MS = 900;
+	const CELEBRATION_FADEOUT_MS = 450;
 	const ERROR_DISPLAY_MS = 5000;
 
 	async function handleResult(result: {
@@ -50,18 +54,19 @@
 					})
 				);
 			}
-			setTimeout(() => {
-				loggedCelebration.set({ active: true, exiting: true });
-				setTimeout(async () => {
-					try {
-						await invalidateAll();
-						await goto('/', { replaceState: true });
-					} catch (e) {
-						console.warn('after log craving navigation', e);
-					} finally {
-						loggedCelebration.set({ active: false, exiting: false });
-					}
-				}, WIN_STATE_FADEOUT_MS);
+			setTimeout(async () => {
+				armPostCravingNavGuard();
+				try {
+					await invalidateAll();
+					await goto('/', { replaceState: true });
+				} catch (e) {
+					console.warn('after log craving navigation', e);
+				}
+				/* Stay full-opacity on home (don’t clear in finally — that removed the overlay instantly). */
+				setTimeout(() => {
+					loggedCelebration.set({ active: true, exiting: true });
+					setTimeout(() => dismissLoggedCelebration(), CELEBRATION_FADEOUT_MS);
+				}, POST_LOG_HOME_HOLD_MS);
 			}, WIN_STATE_DURATION_MS);
 		} else if (result.type === 'failure') {
 			setTimeout(() => {
