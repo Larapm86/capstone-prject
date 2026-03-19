@@ -13,7 +13,15 @@
 			(function () {
 				try {
 					var path = location.pathname;
-					if (path === '/loading' || path.indexOf('/loading/') === 0) return;
+					// Do not force splash on auth/onboarding routes, or login can bounce via /loading.
+					var splashExcluded =
+						path === '/loading' ||
+						path.indexOf('/loading/') === 0 ||
+						path === '/login' ||
+						path.indexOf('/login/') === 0 ||
+						path === '/register-welcome' ||
+						path.indexOf('/register-welcome/') === 0;
+					if (splashExcluded) return;
 					var entries = performance.getEntriesByType('navigation');
 					var nav = entries && entries[0];
 					var type = nav && nav.type;
