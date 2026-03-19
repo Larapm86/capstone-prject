@@ -14,13 +14,7 @@
 				try {
 					var path = location.pathname;
 					// Do not force splash on auth/onboarding routes, or login can bounce via /loading.
-					var splashExcluded =
-						path === '/loading' ||
-						path.indexOf('/loading/') === 0 ||
-						path === '/login' ||
-						path.indexOf('/login/') === 0 ||
-						path === '/register-welcome' ||
-						path.indexOf('/register-welcome/') === 0;
+					var splashExcluded = /(^|\/)(loading|login|register-welcome)(\/|$)/.test(path);
 					if (splashExcluded) return;
 					var entries = performance.getEntriesByType('navigation');
 					var nav = entries && entries[0];
