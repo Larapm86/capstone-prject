@@ -8,6 +8,23 @@
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
+		<!-- Full document load / reload: show splash first (SPA client navigations do not re-run this). -->
+		<script>
+			(function () {
+				try {
+					var path = location.pathname;
+					if (path === '/loading' || path.indexOf('/loading/') === 0) return;
+					var entries = performance.getEntriesByType('navigation');
+					var nav = entries && entries[0];
+					var type = nav && nav.type;
+					if (type === 'back_forward') return;
+					/* No entry yet in some WebViews — still treat as a fresh load */
+					if (nav && type !== 'navigate' && type !== 'reload') return;
+					var next = location.pathname + location.search + location.hash;
+					location.replace('/loading?next=' + encodeURIComponent(next));
+				} catch (e) {}
+			})();
+		</script>
 		<div style="display: contents">%sveltekit.body%</div>
 	</body>
 </html>

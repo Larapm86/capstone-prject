@@ -1,11 +1,23 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { stars } from '$lib/starsData';
 
 	const LOADING_DURATION_MS = 2500;
 	const FADE_OUT_MS = 450;
 	let exiting = $state(false);
+
+	/** Same-origin path only — avoid open redirects via ?next= */
+	function sanitizeNext(raw: string | null): string {
+		if (raw == null || raw === '') return '/';
+		const s = raw.trim().split(/[\r\n\u0000]/)[0] ?? '/';
+		if (!s.startsWith('/') || s.startsWith('//')) return '/';
+		if (/^[a-zA-Z][a-zA-Z+\d]*:/.test(s)) return '/';
+		return s;
+	}
+
+	const destination = $derived(sanitizeNext($page.url.searchParams.get('next')));
 
 	onMount(() => {
 		const startFade = setTimeout(() => {
@@ -15,7 +27,7 @@
 			if (typeof sessionStorage !== 'undefined') {
 				sessionStorage.setItem('becom-from-loading', '1');
 			}
-			goto('/', { replaceState: true });
+			void goto(destination, { replaceState: true });
 		}, LOADING_DURATION_MS);
 		return () => {
 			clearTimeout(startFade);
