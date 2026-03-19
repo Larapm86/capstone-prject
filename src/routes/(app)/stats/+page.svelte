@@ -25,11 +25,13 @@
 </svelte:head>
 
 <div class="overlay-screen">
-	<a href="/" class="overlay-back" aria-label="Back to Reflect">
-		<svg class="overlay-back-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-			<path d="M19 12H5M12 19l-7-7 7-7"/>
-		</svg>
-	</a>
+	<header class="app-nav-chrome overlay-screen__chrome" aria-label="Page tools">
+		<a href="/" class="overlay-back" aria-label="Back to Reflect">
+			<svg class="overlay-back-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<path d="M19 12H5M12 19l-7-7 7-7"/>
+			</svg>
+		</a>
+	</header>
 	<div class="overlay-content">
 <section class="insights-section" aria-labelledby="insights-heading">
 	<h1 id="insights-heading" class="page-title">Insights</h1>
@@ -109,8 +111,8 @@
 
 <style>
 	/* Stats layout structure:
-	 * - overlay-screen: padding 1rem + safe-area (all sides)
-	 * - overlay-content: padding-top (min-touch - 0.5rem); scrollable
+	 * - overlay-screen: horizontal/bottom padding + safe-area; top inset via app-nav-chrome (not scrolled)
+	 * - overlay-content: scrollable below chrome
 	 * - insights-section: flex column, gap 1.5rem
 	 * - insights-columns: mobile = flex column gap 1.5rem; desktop (768px+) = grid 1fr 1.2fr, gap 2rem
 	 * - insights-column-left: 4 cards in grid 2x2, gap 0.75rem; each card padding 1rem 1rem 1.25rem, gap 0.35rem
@@ -123,10 +125,7 @@
 		display: flex;
 		flex-direction: column;
 		z-index: 101;
-		padding-top: calc(1rem + env(safe-area-inset-top, 0px));
-		padding-right: calc(1rem + env(safe-area-inset-right, 0px));
-		padding-left: calc(1rem + env(safe-area-inset-left, 0px));
-		padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+		padding: 0 0 calc(1rem + env(safe-area-inset-bottom, 0px)) 0;
 		touch-action: manipulation;
 		-webkit-tap-highlight-color: transparent;
 	}
@@ -137,18 +136,29 @@
 		overflow-x: hidden;
 		-webkit-overflow-scrolling: touch;
 		overscroll-behavior: contain;
-		padding-top: calc(var(--min-touch) - 0.5rem);
+		padding-top: 0;
+		padding-left: calc(1rem + env(safe-area-inset-left, 0px));
+		padding-right: calc(1rem + env(safe-area-inset-right, 0px));
 		animation: overlay-content-in 0.25s ease-out 0.06s both;
 		-webkit-tap-highlight-color: transparent;
 	}
 	@keyframes overlay-content-in {
-		from { opacity: 0; transform: translateY(0.25rem); }
-		to { opacity: 1; transform: translateY(0); }
+		from {
+			opacity: 1;
+			transform: translateY(0.35rem);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+	.overlay-screen__chrome {
+		padding-left: calc(1rem + env(safe-area-inset-left, 0px));
+		padding-right: calc(1rem + env(safe-area-inset-right, 0px));
 	}
 	.overlay-back {
-		position: absolute;
-		top: calc(1rem + env(safe-area-inset-top, 0px));
-		left: calc(1rem + env(safe-area-inset-left, 0px));
+		position: relative;
+		inset: auto;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -161,7 +171,7 @@
 		z-index: 1;
 	}
 	.overlay-back:hover {
-		background: rgba(255, 255, 255, 0.08);
+		background: var(--surface-hover-light);
 	}
 	.overlay-back-icon {
 		flex-shrink: 0;
@@ -207,36 +217,41 @@
 		gap: 0.75rem;
 	}
 	.insight-card {
-		background: rgba(10, 45, 82, 0.35);
-		border: 1px solid rgba(255, 255, 255, 0.08);
+		/* Same frosted surface as Reflect pill, without 3D lip */
+		background: var(--surface-frosted);
+		backdrop-filter: var(--blur-frosted);
+		-webkit-backdrop-filter: var(--blur-frosted);
+		border: 1px solid var(--border-frosted);
 		border-radius: 0.75rem;
 		padding: 1rem 1rem 1.25rem;
 		display: flex;
 		flex-direction: column;
-		gap: 0.35rem;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+		gap: var(--space-metric-gap);
+		box-shadow: var(--shadow-frosted);
 	}
 	.insight-label {
 		font-size: 0.6875rem;
 		font-weight: 600;
-		letter-spacing: 0.06em;
+		letter-spacing: 0.04em;
 		text-transform: uppercase;
-		color: var(--text-muted);
+		color: var(--color-text-on-frosted-muted);
+		line-height: 1.2;
 	}
 	.insight-value {
 		font-size: 1.5rem;
-		font-weight: 600;
-		color: var(--text);
+		font-weight: 700;
+		letter-spacing: 0.02em;
+		color: var(--color-text-on-frosted);
 		line-height: 1.2;
 	}
 	.insight-empty {
 		font-size: 0.9rem;
-		color: #fff;
+		color: var(--color-text-on-frosted);
 		line-height: 1.35;
 	}
 	.insight-empty-skill {
 		font-weight: 600;
-		color: #fff;
+		color: var(--color-text-on-frosted);
 	}
 	.craving-reflections {
 		margin-top: 1.5rem;
@@ -305,7 +320,7 @@
 		-webkit-tap-highlight-color: transparent;
 	}
 	.delete-btn:hover {
-		background: rgba(248, 113, 113, 0.1);
+		background: var(--surface-danger-soft);
 	}
 	.form-error {
 		margin-top: 0.75rem;

@@ -49,17 +49,14 @@
 		display: flex;
 		align-items: stretch;
 		min-height: 60px;
-		/* Match floating menu: frosted glass + 3D lip same tone as pill */
-		background: rgba(45, 50, 60, 0.4);
-		backdrop-filter: blur(20px) saturate(1.2);
-		-webkit-backdrop-filter: blur(20px) saturate(1.2);
-		border: 1px solid rgba(255, 255, 255, 0.1);
-		border-radius: 9999px;
+		background: var(--surface-frosted);
+		backdrop-filter: var(--blur-frosted);
+		-webkit-backdrop-filter: var(--blur-frosted);
+		border: 1px solid var(--border-frosted);
+		border-radius: var(--radius-pill);
 		overflow: hidden;
 		padding: 8px 16px 12px 32px;
-		box-shadow:
-			0 4px 24px rgba(0, 0, 0, 0.2),
-			0 5px 0 rgba(45, 50, 60, 0.75);
+		box-shadow: var(--shadow-frosted), var(--shadow-frosted-lip);
 		width: 100%;
 		box-sizing: border-box;
 	}
@@ -71,7 +68,7 @@
 		gap: 0.5rem;
 		padding: 0 12px 0 0;
 		text-decoration: none;
-		color: #fff;
+		color: var(--color-text-on-frosted);
 		cursor: pointer;
 		-webkit-tap-highlight-color: transparent;
 		justify-content: center;
@@ -92,14 +89,14 @@
 		font-weight: 600;
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
-		color: rgba(255, 255, 255, 0.65);
+		color: var(--color-text-on-frosted-muted);
 		line-height: 1.2;
 	}
 	.reflect-progress-skill-name {
 		font-size: 0.8125rem;
 		font-weight: 700;
 		letter-spacing: 0.02em;
-		color: #fff;
+		color: var(--color-text-on-frosted);
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -107,7 +104,7 @@
 	}
 	.reflect-progress-divider {
 		width: 1px;
-		background: rgba(255, 255, 255, 0.35);
+		background: var(--border-frosted-divider);
 		flex-shrink: 0;
 		margin: 8px 0;
 	}
@@ -118,7 +115,7 @@
 		width: 52px;
 		flex-shrink: 0;
 		text-decoration: none;
-		color: #fff;
+		color: var(--color-text-on-frosted);
 		cursor: pointer;
 		-webkit-tap-highlight-color: transparent;
 	}
@@ -135,11 +132,11 @@
 	.reflect-progress-track {
 		height: 14px;
 		min-height: 14px;
-		background: rgba(210, 230, 255, 0.22);
-		border: 1px solid rgba(220, 238, 255, 0.35);
-		border-radius: 999px;
+		background: var(--color-accent-blue-soft);
+		border: 1px solid var(--color-accent-blue-border);
+		border-radius: var(--radius-pill);
 		overflow: hidden;
-		box-shadow: 0 0 12px rgba(180, 210, 255, 0.2);
+		box-shadow: var(--shadow-accent-glow);
 	}
 	.reflect-progress-fill {
 		height: 100%;
@@ -147,7 +144,6 @@
 		border-radius: 999px;
 		transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 		min-width: 4px;
-		filter: drop-shadow(0 0 10px rgba(180, 210, 255, 0.45))
-			drop-shadow(0 0 20px rgba(160, 195, 240, 0.28));
+		filter: var(--filter-drop-accent);
 	}
 </style>

@@ -1,0 +1,165 @@
+/**
+ * Becom — design tokens (colors, gradients, surfaces, radii, motion).
+ * Imported from app.css. Use var(--token-name) in components; prefer semantic names.
+ */
+
+:root {
+	/* ── Primitive: night sky (shell, login, route transition fill) ── */
+	--color-sky-950: #010810;
+	--color-sky-900: #010d18;
+	--color-sky-850: #011528;
+	--color-sky-800: #011a2e;
+	--color-sky-700: #011f3b;
+	--color-sky-650: #0a1828;
+	--color-sky-600: #0d1524;
+
+	--gradient-sky-app: linear-gradient(
+		180deg,
+		var(--color-sky-950) 0%,
+		var(--color-sky-900) 18%,
+		var(--color-sky-850) 35%,
+		var(--color-sky-800) 50%,
+		var(--color-sky-700) 68%,
+		var(--color-sky-650) 85%,
+		var(--color-sky-600) 100%
+	);
+
+	/* ── Primitive: horizon land strip (Reflect + auth grass) ── */
+	--color-land-900: #031a20;
+	--color-land-850: #041e24;
+	--color-land-800: #052228;
+	--color-land-750: #051d26;
+	--color-land-700: #041b22;
+
+	--gradient-horizon-land: linear-gradient(
+		to top,
+		var(--color-land-900) 0%,
+		var(--color-land-850) 22%,
+		var(--color-land-800) 45%,
+		var(--color-land-750) 70%,
+		var(--color-land-700) 100%
+	);
+
+	/* Atmosphere above silhouette */
+	--gradient-horizon-glow: linear-gradient(
+		to top,
+		rgba(0, 55, 60, 0.55) 0%,
+		rgba(0, 70, 72, 0.25) 30%,
+		rgba(0, 50, 55, 0.08) 55%,
+		transparent 85%
+	);
+
+	/* Subtle milky band (Insights / Me / auth stars layer) */
+	--gradient-milky-band: radial-gradient(
+		ellipse 120% 40% at 55% 25%,
+		rgba(255, 255, 255, 0.035) 0%,
+		rgba(255, 255, 255, 0.012) 40%,
+		transparent 70%
+	);
+
+	/* Silhouette stack + base (SVG fills + block bg) */
+	--color-silhouette-1: #051a12;
+	--color-silhouette-2: #041510;
+	--color-silhouette-3: #031812;
+	--color-silhouette-4: #030d0a;
+	--color-silhouette-5: #020a08;
+	--color-silhouette-base: #041210;
+
+	/* ── Brand ink (light surfaces: craving form, Reflect sheet) ── */
+	--color-brand-navy: #011f3b;
+	--color-brand-navy-muted: rgba(1, 31, 59, 0.5);
+	--color-brand-navy-subtle: rgba(1, 31, 59, 0.6);
+	--color-brand-navy-border: rgba(1, 31, 59, 0.2);
+	--color-brand-navy-border-strong: rgba(1, 31, 59, 0.3);
+	--color-brand-navy-fill-soft: rgba(1, 31, 59, 0.06);
+	--color-brand-navy-hover-fill: rgba(1, 31, 59, 0.08);
+	--color-brand-navy-divider: rgba(1, 31, 59, 0.08);
+
+	--color-brand-lime: #8adf11;
+
+	/* Paper / inverse text */
+	--color-surface-paper: #ffffff;
+	--color-text-on-paper: var(--color-brand-navy);
+	--color-text-on-paper-muted: rgba(1, 31, 59, 0.5);
+
+	/* ── Frosted glass panels (pill, insight cards, skill cards) ── */
+	--surface-frosted: rgba(45, 50, 60, 0.4);
+	--border-frosted: rgba(255, 255, 255, 0.1);
+	--shadow-frosted: 0 4px 24px rgba(0, 0, 0, 0.2);
+	--shadow-frosted-lip: 0 5px 0 rgba(45, 50, 60, 0.75);
+	--blur-frosted: blur(20px) saturate(1.2);
+
+	--color-text-on-frosted: #ffffff;
+	--color-text-on-frosted-muted: rgba(255, 255, 255, 0.65);
+	--border-frosted-divider: rgba(255, 255, 255, 0.35);
+
+	/* Hover hit on dark chrome */
+	--surface-hover-light: rgba(255, 255, 255, 0.08);
+
+	/* Accent glow (current skill island, focus rings) */
+	--color-accent-blue-soft: rgba(210, 230, 255, 0.22);
+	--color-accent-blue-border: rgba(220, 238, 255, 0.35);
+	--shadow-accent-glow: 0 0 12px rgba(180, 210, 255, 0.2);
+	--shadow-island-glow: 0 0 16px rgba(180, 210, 255, 0.4), 0 0 32px rgba(160, 195, 240, 0.25);
+	--filter-island-glow: drop-shadow(0 0 16px rgba(180, 210, 255, 0.4)) drop-shadow(0 0 32px rgba(160, 195, 240, 0.25));
+	--filter-drop-accent: drop-shadow(0 0 10px rgba(180, 210, 255, 0.45)) drop-shadow(0 0 20px rgba(160, 195, 240, 0.28));
+
+	/* Carousel / dots */
+	--surface-dot-idle: rgba(255, 255, 255, 0.2);
+	--surface-dot-active: rgba(255, 255, 255, 0.35);
+	--outline-focus-light: 2px solid rgba(255, 255, 255, 0.4);
+
+	/* Badge / island */
+	--shadow-island-badge: 0 4px 12px rgba(0, 0, 0, 0.35), 0 0 0 3px rgba(255, 255, 255, 0.08);
+
+	/* Error surfaces */
+	--color-danger: #f87171;
+	--surface-danger-soft: rgba(248, 113, 113, 0.1);
+
+	/* ── Semantic: app chrome (legacy names — keep for existing components) ── */
+	--bg: var(--color-sky-950);
+	--text: #e8e8e8;
+	--text-muted: #8ba3b8;
+	--border: #0d3560;
+	--error: var(--color-danger);
+
+	--input-bg: rgba(10, 45, 82, 0.5);
+	--input-border: rgba(19, 64, 110, 0.6);
+	--input-border-hover: rgba(19, 64, 110, 0.8);
+	--input-focus-border: rgba(255, 255, 255, 0.25);
+	--input-bg-focus: rgba(10, 45, 82, 0.65);
+	--input-focus-ring: 0 0 0 2px rgba(255, 255, 255, 0.08);
+
+	/* Skills map (Me) — island tiles */
+	--island-top: #2580c4;
+	--island-side: #134070;
+	--island-side-dark: #0d3560;
+	--island-current-top: #b8d4f5;
+	--island-current-side: #8bb0dc;
+	--island-current-side-dark: #6b96c4;
+	--island-completed-top: #1e5a8a;
+	--island-completed-side: #0d3560;
+	--island-completed-side-dark: #0a2640;
+	--island-locked-top: #5a7a94;
+	--island-locked-side: #4a5f75;
+	--island-locked-side-dark: #3d5266;
+	--island-shade-light: rgba(0, 0, 0, 0.08);
+	--island-shade-medium: rgba(0, 0, 0, 0.18);
+	--island-badge-bg: rgba(13, 53, 96, 0.95);
+	--island-badge-locked-bg: rgba(19, 64, 110, 0.7);
+	--island-progress-fill: #60a5fa;
+	--island-progress-track: rgba(255, 255, 255, 0.14);
+
+	/* ── Layout & type (shared) ── */
+	--min-touch: 44px;
+	--page-padding: 1rem;
+	--max-width: 36rem;
+	--font-sans: 'Noto Sans', system-ui, sans-serif;
+
+	--radius-sm: 0.5rem;
+	--radius-md: 0.75rem;
+	--radius-lg: 1.25rem;
+	--radius-pill: 9999px;
+
+	--space-metric-gap: 8px;
+}

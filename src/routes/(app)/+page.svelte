@@ -432,9 +432,11 @@
 
 {#if phase === 'complete'}
 	<div class="white-screen visible" class:exiting={winStateExiting} class:hide-content={showWinState} role="dialog" aria-label="Reflecting on a craving">
-		<button type="button" class="close-button" onclick={closeWhite} aria-label="Close">
-			<span class="close-icon" aria-hidden="true">×</span>
-		</button>
+		<header class="app-nav-chrome white-screen__chrome" aria-label="Dialog tools">
+			<button type="button" class="close-button" onclick={() => closeWhite()} aria-label="Close">
+				<span class="close-icon" aria-hidden="true">×</span>
+			</button>
+		</header>
 		<div class="white-screen-content">
 			<CravingForm
 				level={level}
@@ -956,7 +958,7 @@
 		height: 200vmax;
 		margin-left: -100vmax;
 		margin-top: -100vmax;
-		background: #fff;
+		background: var(--color-surface-paper);
 		border-radius: 50%;
 		transform: scale(calc(var(--progress) / 100));
 		opacity: calc(var(--progress) / 100);
@@ -974,18 +976,19 @@
 	.white-screen {
 		position: fixed;
 		inset: 0;
-		background: #fff;
+		background: var(--color-surface-paper);
 		z-index: 2147483647;
 		opacity: 0;
 		transition: opacity 0.5s ease-out;
 		display: flex;
 		flex-direction: column;
 		align-items: stretch;
-		padding: 1rem;
-		padding-top: calc(1rem + env(safe-area-inset-top, 0px));
-		padding-right: calc(1rem + env(safe-area-inset-right, 0px));
+		padding: 0 0 calc(1rem + env(safe-area-inset-bottom, 0px)) 0;
+	}
+	.white-screen__chrome {
 		padding-left: calc(1rem + env(safe-area-inset-left, 0px));
-		padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+		padding-right: calc(1rem + env(safe-area-inset-right, 0px));
+		justify-content: flex-start;
 	}
 	.white-screen.visible {
 		opacity: 1;
@@ -1020,9 +1023,8 @@
 		}
 	}
 	.close-button {
-		position: absolute;
-		top: calc(1rem + env(safe-area-inset-top, 0px));
-		left: calc(1rem + env(safe-area-inset-left, 0px));
+		position: relative;
+		inset: auto;
 		z-index: 10;
 		width: var(--min-touch);
 		height: var(--min-touch);
@@ -1030,15 +1032,15 @@
 		align-items: center;
 		justify-content: center;
 		background: transparent;
-		color: #011F3B;
+		color: var(--color-brand-navy);
 		border: none;
-		border-radius: 0.5rem;
+		border-radius: var(--radius-sm);
 		cursor: pointer;
 		-webkit-tap-highlight-color: transparent;
 		opacity: 0;
 	}
 	.close-button:hover {
-		background: rgba(1, 31, 59, 0.08);
+		background: var(--color-brand-navy-hover-fill);
 	}
 	.close-icon {
 		font-size: 2rem;
@@ -1050,12 +1052,16 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		padding: 1rem 1.25rem 2rem;
+		padding: 0 1.25rem 2rem;
 		padding-left: calc(1.25rem + env(safe-area-inset-left, 0px));
 		padding-right: calc(1.25rem + env(safe-area-inset-right, 0px));
 		width: 100%;
 		min-height: 0;
 		box-sizing: border-box;
+		overflow-y: auto;
+		overflow-x: hidden;
+		-webkit-overflow-scrolling: touch;
+		overscroll-behavior: contain;
 	}
 	.white-screen-content :global(.craving-form-inner) {
 		flex: 1;
@@ -1067,7 +1073,7 @@
 	.win-state {
 		position: fixed;
 		inset: 0;
-		background: #fff;
+		background: var(--color-surface-paper);
 		z-index: 2147483648;
 		display: flex;
 		flex-direction: column;
@@ -1091,8 +1097,8 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: #011F3B;
-		color: #fff;
+		background: var(--color-brand-navy);
+		color: var(--color-text-on-frosted);
 		font-size: 2rem;
 		font-weight: 600;
 		border-radius: 50%;
@@ -1100,7 +1106,7 @@
 	.win-text {
 		font-size: 1.25rem;
 		font-weight: 600;
-		color: #011F3B;
+		color: var(--color-brand-navy);
 		margin: 0;
 	}
 </style>

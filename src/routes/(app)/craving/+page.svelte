@@ -46,7 +46,9 @@
 </svelte:head>
 
 <div class="craving-page craving-page--enter">
-	<a href="/" class="close-link" aria-label="Back to Reflect">×</a>
+	<header class="app-nav-chrome craving-page__chrome" aria-label="Page tools">
+		<a href="/" class="close-link" aria-label="Back to Reflect">×</a>
+	</header>
 	<div class="craving-content">
 		<CravingForm
 			level={level}
@@ -75,11 +77,11 @@
 		display: flex;
 		flex-direction: column;
 		align-items: stretch;
-		padding: 1rem 1.25rem;
-		padding-top: calc(1rem + env(safe-area-inset-top, 0px));
-		padding-right: calc(1.25rem + env(safe-area-inset-right, 0px));
+		padding: 0 0 calc(1rem + env(safe-area-inset-bottom, 0px)) 0;
+	}
+	.craving-page__chrome {
 		padding-left: calc(1.25rem + env(safe-area-inset-left, 0px));
-		padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+		padding-right: calc(1.25rem + env(safe-area-inset-right, 0px));
 	}
 	/* Smooth entrance on mobile */
 	.craving-page--enter {
@@ -110,24 +112,23 @@
 		}
 	}
 	.close-link {
-		position: absolute;
-		top: calc(1rem + env(safe-area-inset-top, 0px));
-		left: calc(1rem + env(safe-area-inset-left, 0px));
-		z-index: 100;
+		position: relative;
+		inset: auto;
+		z-index: 1;
 		width: var(--min-touch);
 		height: var(--min-touch);
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		color: #011f3b;
+		color: var(--color-brand-navy);
 		font-size: 2rem;
 		line-height: 1;
 		text-decoration: none;
-		border-radius: 0.5rem;
+		border-radius: var(--radius-sm);
 		-webkit-tap-highlight-color: transparent;
 	}
 	.close-link:hover {
-		background: rgba(1, 31, 59, 0.08);
+		background: var(--color-brand-navy-hover-fill);
 	}
 	.craving-content {
 		flex: 1;
@@ -135,8 +136,12 @@
 		flex-direction: column;
 		align-items: stretch;
 		justify-content: flex-start;
-		padding: 1.5rem 0 2rem;
+		padding: 0 0 2rem;
 		min-height: 0;
+		overflow-y: auto;
+		overflow-x: hidden;
+		-webkit-overflow-scrolling: touch;
+		overscroll-behavior: contain;
 		width: 100%;
 		max-width: min(56rem, 100%);
 		margin: 0 auto;

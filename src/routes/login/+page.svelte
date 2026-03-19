@@ -101,29 +101,14 @@
 		min-height: 100vh;
 		min-height: 100dvh;
 		overflow: hidden;
-		/* Same deep night sky as cravings */
-		background: linear-gradient(
-			180deg,
-			#010810 0%,
-			#010d18 18%,
-			#011528 35%,
-			#011a2e 50%,
-			#011F3B 68%,
-			#0a1828 85%,
-			#0d1524 100%
-		);
+		background: var(--gradient-sky-app);
 	}
 	.auth-milky {
 		position: fixed;
 		inset: 0;
 		z-index: 0;
 		pointer-events: none;
-		background: radial-gradient(
-			ellipse 120% 40% at 55% 25%,
-			rgba(255, 255, 255, 0.035) 0%,
-			rgba(255, 255, 255, 0.012) 40%,
-			transparent 70%
-		);
+		background: var(--gradient-milky-band);
 	}
 	.auth-stars {
 		position: fixed;
@@ -196,14 +181,7 @@
 			100% 55%,
 			100% 100%
 		);
-		background: linear-gradient(
-			to top,
-			#031a20 0%,
-			#041e24 22%,
-			#052228 45%,
-			#051D26 70%,
-			#041b22 100%
-		);
+		background: var(--gradient-horizon-land);
 	}
 	.auth-green-grass {
 		position: absolute;
@@ -251,13 +229,7 @@
 		height: 50vh;
 		z-index: 1;
 		pointer-events: none;
-		background: linear-gradient(
-			to top,
-			rgba(0, 55, 60, 0.55) 0%,
-			rgba(0, 70, 72, 0.25) 30%,
-			rgba(0, 50, 55, 0.08) 55%,
-			transparent 85%
-		);
+		background: var(--gradient-horizon-glow);
 	}
 	.auth-night-silhouette {
 		position: fixed;
@@ -268,7 +240,7 @@
 		min-height: 130px;
 		z-index: 2;
 		pointer-events: none;
-		background: #041210;
+		background: var(--color-silhouette-base);
 	}
 	.auth-silhouette-svg {
 		width: 100%;
@@ -287,7 +259,7 @@
 		justify-content: flex-start;
 		padding: 3rem 1.5rem 3rem;
 		padding-top: min(4rem, 12vh);
-		color: #fff;
+		color: var(--color-text-on-frosted);
 	}
 	.auth-content .logo {
 		margin-bottom: 1rem;
@@ -323,7 +295,7 @@
 		border: 1px solid rgba(255, 255, 255, 0.2);
 		border-radius: 0.5rem;
 		background: rgba(255, 255, 255, 0.08);
-		color: #fff;
+		color: var(--color-text-on-frosted);
 		font-size: 1rem;
 	}
 	.form-group input::placeholder {
@@ -346,18 +318,18 @@
 		border: none;
 		border-radius: 0.5rem;
 		background: rgba(255, 255, 255, 0.95);
-		color: #011528;
+		color: var(--color-sky-850);
 		font-size: 0.95rem;
 		font-weight: 600;
 		cursor: pointer;
 	}
 	.form-actions button:hover {
-		background: #fff;
+		background: var(--color-surface-paper);
 	}
 	.form-actions button.form-actions-text {
 		background: transparent !important;
 		border: none !important;
-		color: #fff;
+		color: var(--color-text-on-frosted);
 		font-weight: 500;
 		text-decoration: none;
 		border-radius: 0.35rem;
@@ -365,7 +337,7 @@
 	}
 	.form-actions button.form-actions-text:hover {
 		background: rgba(255, 255, 255, 0.12) !important;
-		color: #fff;
+		color: var(--color-text-on-frosted);
 	}
 	.form-actions button.form-actions-text:focus-visible {
 		outline: 2px solid rgba(255, 255, 255, 0.9);
@@ -376,7 +348,7 @@
 		opacity: 0.8;
 	}
 	.error {
-		color: #ff9b9b;
+		color: var(--error);
 		margin-top: 1rem;
 		font-size: 0.9rem;
 	}

@@ -39,3 +39,17 @@ export const SKILLS = [
 ] as const;
 
 export const MAX_LEVEL = 7;
+
+/**
+ * What the user must achieve while a skill is **active** (to advance or, at L7, to stay on track).
+ * Copy matches product spec: Ln → L(n+1) requirements; L7 is ongoing.
+ */
+export const SKILL_ADVANCE_REQUIREMENT: Record<number, string> = {
+	1: '7 cravings reflected',
+	2: '3 different triggers',
+	3: '10 sessions with a feeling named',
+	4: '5 times you recognised a pattern',
+	5: '5 sessions fully completed',
+	6: '10 conscious choices made',
+	7: '20 days out of 30 with a conscious response'
+};

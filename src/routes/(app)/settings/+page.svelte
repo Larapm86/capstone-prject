@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { SKILLS } from '$lib/constants/skills';
+	import { SKILLS, SKILL_ADVANCE_REQUIREMENT } from '$lib/constants/skills';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -34,11 +34,13 @@
 </svelte:head>
 
 <div class="overlay-screen">
-	<a href="/" class="overlay-back" aria-label="Back to Reflect">
-		<svg class="overlay-back-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-			<path d="M19 12H5M12 19l-7-7 7-7"/>
-		</svg>
-	</a>
+	<header class="app-nav-chrome overlay-screen__chrome" aria-label="Page tools">
+		<a href="/" class="overlay-back" aria-label="Back to Reflect">
+			<svg class="overlay-back-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<path d="M19 12H5M12 19l-7-7 7-7"/>
+			</svg>
+		</a>
+	</header>
 	<div class="overlay-content">
 <section class="me-section" aria-labelledby="skills-heading">
 	<h1 id="skills-heading" class="page-title me-title">Skills</h1>
@@ -56,6 +58,7 @@
 				{@const isCompleted = skill.level < level}
 				{@const isCurrent = skill.level === level}
 				{@const isLocked = skill.level > level}
+				{@const requirementCaption = isCurrent ? SKILL_ADVANCE_REQUIREMENT[skill.level] : null}
 				<article
 					class="carousel-card map-node"
 					class:node--completed={isCompleted}
@@ -63,7 +66,7 @@
 					class:node--locked={isLocked}
 					role="listitem"
 					aria-current={isCurrent ? 'step' : undefined}
-					aria-label="Skill {skill.level}: {skill.name}{isLocked ? ' (locked)' : ''}{isCurrent ? '. Current skill.' : ''}"
+					aria-label="Skill {skill.level}: {skill.name}{isLocked ? ' (locked)' : ''}{isCurrent ? '. Current skill.' : ''}{requirementCaption ? ' Goal: ' + requirementCaption : ''}"
 				>
 					<!-- Island on top of card -->
 					<div class="carousel-card__island">
@@ -110,11 +113,6 @@
 										<path d="M89.9896 158.658L167.994 113.377C169.17 112.694 169.831 111.558 169.976 110.365L169.976 109.36L169.983 97.8858C169.98 98.179 169.975 98.3324 169.97 98.2909L169.975 89.5656L169.987 71.2768C169.887 72.5318 169.221 73.7465 167.988 74.4623L132.092 95.2995L89.9833 119.744C88.4436 120.637 86.7278 121.085 85.0119 121.085L85.0148 139.198V160C86.7318 160 88.4489 159.553 89.9896 158.658Z" fill="var(--island-shade-medium)"/>
 									</g>
 								</svg>
-								<div class="island__top-content">
-									{#if isLocked}
-										<p class="island__locked-label">Complete previous skill to unlock</p>
-									{/if}
-								</div>
 							</div>
 						</div>
 					</div>
@@ -132,11 +130,15 @@
 								aria-valuemin={0}
 								aria-valuemax={progress.required}
 								aria-label="{isCurrent ? progress.label + ': ' + progress.current + ' of ' + progress.required : 'Completed'}"
+								aria-describedby={requirementCaption ? `skill-req-${skill.level}` : undefined}
 							>
 								<div class="carousel-card__progress-track">
 									<div class="carousel-card__progress-fill" style="width: {isCompleted ? 100 : progressPercent}%"></div>
 								</div>
 							</div>
+							{#if requirementCaption}
+								<p class="carousel-card__requirement" id="skill-req-{skill.level}">{requirementCaption}</p>
+							{/if}
 						{/if}
 					</div>
 				</article>
@@ -167,26 +169,34 @@
 		display: flex;
 		flex-direction: column;
 		z-index: 101;
-		padding-top: calc(1rem + env(safe-area-inset-top, 0px));
-		padding-right: calc(1rem + env(safe-area-inset-right, 0px));
-		padding-left: calc(1rem + env(safe-area-inset-left, 0px));
-		padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+		padding: 0 0 calc(1rem + env(safe-area-inset-bottom, 0px)) 0;
 	}
 	.overlay-content {
 		flex: 1;
 		min-height: 0;
 		overflow: auto;
-		padding-top: calc(var(--min-touch) - 0.5rem);
+		padding-top: 0;
+		padding-left: calc(1rem + env(safe-area-inset-left, 0px));
+		padding-right: calc(1rem + env(safe-area-inset-right, 0px));
 		animation: overlay-content-in 0.2s ease-out 0.05s both;
 	}
 	@keyframes overlay-content-in {
-		from { opacity: 0; }
-		to { opacity: 1; }
+		from {
+			opacity: 1;
+			transform: translateY(6px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+	.overlay-screen__chrome {
+		padding-left: calc(1rem + env(safe-area-inset-left, 0px));
+		padding-right: calc(1rem + env(safe-area-inset-right, 0px));
 	}
 	.overlay-back {
-		position: absolute;
-		top: calc(1rem + env(safe-area-inset-top, 0px));
-		left: calc(1rem + env(safe-area-inset-left, 0px));
+		position: relative;
+		inset: auto;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -199,7 +209,7 @@
 		z-index: 1;
 	}
 	.overlay-back:hover {
-		background: rgba(255, 255, 255, 0.08);
+		background: var(--surface-hover-light);
 	}
 	.overlay-back-icon {
 		flex-shrink: 0;
@@ -246,12 +256,14 @@
 		display: flex;
 		flex-direction: column;
 		align-items: stretch;
-		background: rgba(10, 45, 82, 0.35);
-		border: 1px solid rgba(13, 53, 96, 0.5);
-		border-radius: 20px;
+		background: var(--surface-frosted);
+		backdrop-filter: var(--blur-frosted);
+		-webkit-backdrop-filter: var(--blur-frosted);
+		border: 1px solid var(--border-frosted);
+		border-radius: var(--radius-lg);
 		overflow: hidden;
 		margin-right: 1rem;
-		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+		box-shadow: var(--shadow-frosted);
 	}
 	.carousel-card:last-child {
 		margin-right: var(--page-padding);
@@ -280,6 +292,7 @@
 	}
 	.carousel-card__progress {
 		width: 100%;
+		align-self: stretch;
 		margin-top: auto;
 		margin-bottom: 0;
 		padding-top: 1rem;
@@ -288,11 +301,11 @@
 	.carousel-card__progress-track {
 		height: 14px;
 		min-height: 14px;
-		background: rgba(210, 230, 255, 0.22);
-		border: 1px solid rgba(220, 238, 255, 0.35);
-		border-radius: 999px;
+		background: var(--color-accent-blue-soft);
+		border: 1px solid var(--color-accent-blue-border);
+		border-radius: var(--radius-pill);
 		overflow: hidden;
-		box-shadow: 0 0 12px rgba(180, 210, 255, 0.2);
+		box-shadow: var(--shadow-accent-glow);
 	}
 	/* Same fill as pill + luminous glow like isometric island */
 	.carousel-card__progress-fill {
@@ -301,14 +314,26 @@
 		border-radius: 999px;
 		transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 		min-width: 4px;
-		filter: drop-shadow(0 0 10px rgba(180, 210, 255, 0.45))
-			drop-shadow(0 0 20px rgba(160, 195, 240, 0.28));
+		filter: var(--filter-drop-accent);
 	}
 	.carousel-card__desc {
 		font-size: 16px;
-		color: var(--text-muted);
+		color: var(--color-text-on-frosted);
 		line-height: 1.45;
 		margin: 0 0 1rem;
+	}
+	/* Active skill: subtle caption under progress bar */
+	.carousel-card__requirement {
+		width: 100%;
+		align-self: stretch;
+		margin: var(--space-metric-gap) 0 0;
+		padding: 0;
+		text-align: right;
+		font-size: 0.8125rem;
+		font-weight: 400;
+		line-height: 1.35;
+		color: var(--text-muted);
+		opacity: 0.92;
 	}
 	.carousel-card__locked-msg {
 		font-size: 12px;
@@ -332,13 +357,13 @@
 		min-height: 6px;
 		border-radius: 50%;
 		border: none;
-		background: rgba(255, 255, 255, 0.2);
+		background: var(--surface-dot-idle);
 		cursor: pointer;
 		padding: 0;
 		transition: background 0.2s, transform 0.2s;
 	}
 	.carousel-dot:hover {
-		background: rgba(255, 255, 255, 0.35);
+		background: var(--surface-dot-active);
 	}
 	.carousel-dot.active {
 		background: var(--text-muted);
@@ -357,7 +382,7 @@
 		transition: transform 0.25s ease, filter 0.25s ease;
 	}
 	.island:focus-visible {
-		outline: 2px solid rgba(255, 255, 255, 0.4);
+		outline: var(--outline-focus-light);
 		outline-offset: 4px;
 		border-radius: 8px;
 	}
@@ -377,25 +402,12 @@
 		--island-top: var(--island-current-top);
 		--island-side: var(--island-current-side);
 		--island-side-dark: var(--island-current-side-dark);
-		filter: drop-shadow(0 0 16px rgba(180, 210, 255, 0.4))
-			drop-shadow(0 0 32px rgba(160, 195, 240, 0.25));
+		filter: var(--filter-island-glow);
 	}
 	.island__tile {
 		display: block;
 		width: 100%;
 		height: 100%;
-	}
-	.island__top-content {
-		position: absolute;
-		left: 50%;
-		top: 28%;
-		transform: translate(-50%, 0);
-		width: 72%;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		pointer-events: none;
 	}
 	/* Side faces: gradient starts with top’s bottom color for seamless join */
 
@@ -426,9 +438,7 @@
 		color: var(--text);
 		font-weight: 700;
 		font-size: 1rem;
-		box-shadow:
-			0 4px 12px rgba(0, 0, 0, 0.35),
-			0 0 0 3px rgba(255, 255, 255, 0.08);
+		box-shadow: var(--shadow-island-badge);
 	}
 	.island-badge__num {
 		line-height: 1;
@@ -438,20 +448,11 @@
 	}
 	/* Active island badge: Becom logo in brand green */
 	.map-node.node--current .island-badge .island-badge-logo {
-		color: #8ADF11;
+		color: var(--color-brand-lime);
 	}
 	.map-node.node--locked .island-badge {
 		background: var(--island-badge-locked-bg);
 		color: var(--text-muted);
-	}
-
-	.island__locked-label {
-		position: relative;
-		font-size: 0.7rem;
-		color: var(--text);
-		margin: 0;
-		line-height: 1.3;
-		text-align: center;
 	}
 
 	/* Completed: calmer blue (app palette) */

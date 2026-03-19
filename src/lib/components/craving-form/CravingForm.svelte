@@ -349,7 +349,7 @@
 		margin: 0 auto;
 		box-sizing: border-box;
 		overflow: hidden;
-		background: #fff;
+		background: var(--color-surface-paper);
 	}
 	.craving-form-constrain {
 		display: flex;
@@ -366,7 +366,7 @@
 		padding-right: calc(0.5rem + 8px);
 		flex-shrink: 0;
 		font-size: 0.8125rem;
-		color: rgba(1, 31, 59, 0.5);
+		color: var(--color-brand-navy-muted);
 		font-family: var(--font-sans);
 	}
 	.craving-form-scroll {
@@ -381,21 +381,21 @@
 		display: block;
 		font-size: 1.0625rem;
 		font-weight: 600;
-		color: #011f3b;
+		color: var(--color-brand-navy);
 		margin-bottom: 0.875rem;
 	}
 	.optional {
 		font-weight: 400;
-		color: rgba(1, 31, 59, 0.6);
+		color: var(--color-brand-navy-subtle);
 	}
 	.step-input {
 		font-size: 16px;
 		padding: 0.875rem 1rem;
 		width: 100%;
 		box-sizing: border-box;
-		background: rgba(1, 31, 59, 0.06);
-		color: #011f3b;
-		border: 1px solid rgba(1, 31, 59, 0.2);
+		background: var(--color-brand-navy-fill-soft);
+		color: var(--color-brand-navy);
+		border: 1px solid var(--color-brand-navy-border);
 		border-radius: 0.75rem;
 		font-family: var(--font-sans);
 		/* Leave space above when scrolled into view (keyboard open) so CTA stays visible */
@@ -409,23 +409,23 @@
 	.chip {
 		padding: 0.5rem 0.75rem;
 		border-radius: 9999px;
-		border: 1px solid rgba(1, 31, 59, 0.3);
-		background: #fff;
-		color: #011f3b;
+		border: 1px solid var(--color-brand-navy-border-strong);
+		background: var(--color-surface-paper);
+		color: var(--color-brand-navy);
 		font-size: 0.9rem;
 		font-family: var(--font-sans);
 		cursor: pointer;
 		-webkit-tap-highlight-color: transparent;
 	}
 	.chip.selected {
-		background: #011f3b;
-		color: #fff;
-		border-color: #011f3b;
+		background: var(--color-brand-navy);
+		color: var(--color-text-on-frosted);
+		border-color: var(--color-brand-navy);
 	}
 	.chip:focus-visible,
 	.emotion-cell:focus-visible,
 	.card-option:focus-visible {
-		outline: 2px solid #011f3b;
+		outline: 2px solid var(--color-brand-navy);
 		outline-offset: 2px;
 	}
 	.emotion-grid {
@@ -436,18 +436,18 @@
 	.emotion-cell {
 		padding: 0.75rem;
 		border-radius: 0.5rem;
-		border: 1px solid rgba(1, 31, 59, 0.2);
-		background: #fff;
-		color: #011f3b;
+		border: 1px solid var(--color-brand-navy-border);
+		background: var(--color-surface-paper);
+		color: var(--color-brand-navy);
 		font-size: 0.85rem;
 		font-family: var(--font-sans);
 		cursor: pointer;
 		-webkit-tap-highlight-color: transparent;
 	}
 	.emotion-cell.selected {
-		background: #011f3b;
-		color: #fff;
-		border-color: #011f3b;
+		background: var(--color-brand-navy);
+		color: var(--color-text-on-frosted);
+		border-color: var(--color-brand-navy);
 	}
 	.cards-stack {
 		display: flex;
@@ -467,9 +467,9 @@
 	.card-option {
 		padding: 1rem;
 		border-radius: 0.75rem;
-		border: 1px solid rgba(1, 31, 59, 0.2);
-		background: #fff;
-		color: #011f3b;
+		border: 1px solid var(--color-brand-navy-border);
+		background: var(--color-surface-paper);
+		color: var(--color-brand-navy);
 		font-size: 1rem;
 		font-weight: 500;
 		font-family: var(--font-sans);
@@ -478,9 +478,9 @@
 		min-height: var(--min-touch);
 	}
 	.card-option.selected {
-		background: #011f3b;
-		color: #fff;
-		border-color: #011f3b;
+		background: var(--color-brand-navy);
+		color: var(--color-text-on-frosted);
+		border-color: var(--color-brand-navy);
 	}
 	.sliders {
 		display: flex;
@@ -495,35 +495,35 @@
 	.slider-row .slider-label {
 		min-width: 4rem;
 		font-size: 0.9rem;
-		color: #011f3b;
+		color: var(--color-brand-navy);
 	}
 	.step-input:focus-visible,
 	.slider:focus-visible {
-		outline: 2px solid #011f3b;
+		outline: 2px solid var(--color-brand-navy);
 		outline-offset: 2px;
 	}
 	.cta-primary:focus-visible,
 	.cta-secondary:focus-visible {
-		outline: 2px solid #011f3b;
+		outline: 2px solid var(--color-brand-navy);
 		outline-offset: 2px;
 	}
 	.cta-primary:focus-visible {
-		outline-color: #fff;
+		outline-color: var(--color-surface-paper);
 		outline-offset: 2px;
 	}
 	.slider {
 		flex: 1;
 		min-width: 0;
-		accent-color: #011f3b;
+		accent-color: var(--color-brand-navy);
 	}
 	.slider-row span:last-child {
 		width: 1.5rem;
 		text-align: right;
 		font-weight: 600;
-		color: #011f3b;
+		color: var(--color-brand-navy);
 	}
 	.step-error {
-		color: #c00;
+		color: var(--error);
 		font-size: 0.875rem;
 		margin: 0 0 0.5rem;
 	}
@@ -535,9 +535,9 @@
 		padding: 1rem 0;
 		padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
 		flex-shrink: 0;
-		border-top: 1px solid rgba(1, 31, 59, 0.08);
+		border-top: 1px solid var(--color-brand-navy-divider);
 		margin-top: auto;
-		background: #fff;
+		background: var(--color-surface-paper);
 		position: sticky;
 		bottom: 0;
 		/* Keep CTA visible and thumb-reachable when virtual keyboard opens */
@@ -546,8 +546,8 @@
 		flex: 1;
 		min-height: var(--min-touch);
 		padding: 0.75rem 1.5rem;
-		background: #011f3b;
-		color: #fff;
+		background: var(--color-brand-navy);
+		color: var(--color-text-on-frosted);
 		border: none;
 		border-radius: 0.75rem;
 		font-family: var(--font-sans);
@@ -564,8 +564,8 @@
 		min-height: var(--min-touch);
 		padding: 0.75rem 1rem;
 		background: transparent;
-		color: #011f3b;
-		border: 1px solid rgba(1, 31, 59, 0.3);
+		color: var(--color-brand-navy);
+		border: 1px solid var(--color-brand-navy-border-strong);
 		border-radius: 0.75rem;
 		font-family: var(--font-sans);
 		font-weight: 500;

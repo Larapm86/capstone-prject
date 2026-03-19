@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { fade } from 'svelte/transition';
 	import { page } from '$app/stores';
 	import { reflectHoldState } from '$lib/stores/reflectHold';
 	import { stars } from '$lib/starsData';
@@ -54,23 +53,30 @@
 		</clipPath>
 	</defs>
 </svg>
-<div class="cravings-shell" class:landing class:craving-route={$page.url.pathname === '/craving'}>
-	{#if $page.url.pathname !== '/craving' && !($page.url.pathname === '/' && $reflectHoldState?.phase === 'complete')}
-		<form method="POST" action="/sign-out" class="exit-button-wrap">
-			<button type="submit" class="exit-button" aria-label="Sign out">
-				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-					<g clip-path="url(#sign-out-clip)">
-						<path d="M2 21V3C2 2.73478 2.10536 2.48043 2.29289 2.29289C2.48043 2.10536 2.73478 2 3 2H7C7.55228 2 8 1.55228 8 1C8 0.447715 7.55228 0 7 0H3C2.20435 0 1.44129 0.31607 0.87868 0.87868C0.31607 1.44129 0 2.20435 0 3L0 21C0 21.7956 0.31607 22.5587 0.87868 23.1213C1.44129 23.6839 2.20435 24 3 24H7C7.55228 24 8 23.5523 8 23C8 22.4477 7.55228 22 7 22H3C2.73478 22 2.48043 21.8946 2.29289 21.7071C2.10536 21.5196 2 21.2652 2 21Z" fill="currentColor"/>
-						<path d="M23.1231 9.87839L19.2441 5.99939C18.8537 5.60892 18.2206 5.60892 17.8301 5.99939C17.4397 6.38985 17.4397 7.02292 17.8301 7.41339L21.3871 10.9704L5.99835 10.9976C5.44676 10.9986 5.00012 11.446 5.00012 11.9976C5.00012 12.5506 5.44891 12.9986 6.00189 12.9976L21.4431 12.9704L17.8281 16.5854C17.4377 16.9759 17.4377 17.6089 17.8281 17.9994C18.2186 18.3899 18.8517 18.3899 19.2421 17.9994L23.1211 14.1204C23.6838 13.5581 24.0001 12.7953 24.0005 11.9998C24.0009 11.2043 23.6853 10.4412 23.1231 9.87839Z" fill="currentColor"/>
-					</g>
-					<defs>
-						<clipPath id="sign-out-clip">
-							<rect width="24" height="24" fill="white"/>
-						</clipPath>
-					</defs>
-				</svg>
-			</button>
-		</form>
+<div
+	class="cravings-shell"
+	class:landing
+	class:craving-route={$page.url.pathname === '/craving'}
+	class:shell-stars-above-main={$page.url.pathname === '/stats' || $page.url.pathname === '/settings'}
+>
+	{#if $page.url.pathname !== '/craving' && $page.url.pathname !== '/stats' && $page.url.pathname !== '/settings' && !($page.url.pathname === '/' && $reflectHoldState?.phase === 'complete')}
+		<header class="app-nav-chrome shell-top-chrome" aria-label="Account">
+			<form method="POST" action="/sign-out" class="exit-button-form">
+				<button type="submit" class="exit-button" aria-label="Sign out">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+						<g clip-path="url(#sign-out-clip)">
+							<path d="M2 21V3C2 2.73478 2.10536 2.48043 2.29289 2.29289C2.48043 2.10536 2.73478 2 3 2H7C7.55228 2 8 1.55228 8 1C8 0.447715 7.55228 0 7 0H3C2.20435 0 1.44129 0.31607 0.87868 0.87868C0.31607 1.44129 0 2.20435 0 3L0 21C0 21.7956 0.31607 22.5587 0.87868 23.1213C1.44129 23.6839 2.20435 24 3 24H7C7.55228 24 8 23.5523 8 23C8 22.4477 7.55228 22 7 22H3C2.73478 22 2.48043 21.8946 2.29289 21.7071C2.10536 21.5196 2 21.2652 2 21Z" fill="currentColor"/>
+							<path d="M23.1231 9.87839L19.2441 5.99939C18.8537 5.60892 18.2206 5.60892 17.8301 5.99939C17.4397 6.38985 17.4397 7.02292 17.8301 7.41339L21.3871 10.9704L5.99835 10.9976C5.44676 10.9986 5.00012 11.446 5.00012 11.9976C5.00012 12.5506 5.44891 12.9986 6.00189 12.9976L21.4431 12.9704L17.8281 16.5854C17.4377 16.9759 17.4377 17.6089 17.8281 17.9994C18.2186 18.3899 18.8517 18.3899 19.2421 17.9994L23.1211 14.1204C23.6838 13.5581 24.0001 12.7953 24.0005 11.9998C24.0009 11.2043 23.6853 10.4412 23.1231 9.87839Z" fill="currentColor"/>
+						</g>
+						<defs>
+							<clipPath id="sign-out-clip">
+								<rect width="24" height="24" fill="white"/>
+							</clipPath>
+						</defs>
+					</svg>
+				</button>
+			</form>
+		</header>
 	{/if}
 	{#if $page.url.pathname === '/'}
 		<!-- Tree/horizon full-bleed: rendered here so it's never inside the scroll container -->
@@ -122,8 +128,12 @@
 
 	<main class="app-page screen-content">
 		<div class="page-transition-container">
+			{#if $page.url.pathname === '/stats' || $page.url.pathname === '/settings'}
+				<!-- Opaque sky under route content so cross-route fades don't show Reflect / gaps; stars stay z-50 above -->
+				<div class="page-transition-sky-fill" aria-hidden="true"></div>
+			{/if}
 			{#key $page.url.pathname}
-				<div class="page-transition-wrap" in:fade={{ duration: 160 }} out:fade={{ duration: 120 }}>
+				<div class="page-transition-wrap">
 					{@render children()}
 				</div>
 			{/key}
@@ -144,15 +154,29 @@
 </div>
 
 <style>
-	.exit-button-wrap {
-		position: fixed;
-		top: calc(1rem + env(safe-area-inset-top, 0px));
-		right: calc(1rem + env(safe-area-inset-right, 0px));
+	/* Top row: safe area + exit — not part of main scroll */
+	.shell-top-chrome {
+		position: relative;
 		z-index: 99;
+		justify-content: flex-end;
+		padding-left: calc(1rem + env(safe-area-inset-left, 0px));
+		padding-right: calc(1rem + env(safe-area-inset-right, 0px));
+		pointer-events: none;
+	}
+	.shell-top-chrome .exit-button-form {
+		pointer-events: auto;
+	}
+	.exit-button-form {
+		margin: 0;
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
 	}
 	.exit-button {
-		width: 24px;
-		height: 24px;
+		min-width: var(--min-touch);
+		min-height: var(--min-touch);
+		width: var(--min-touch);
+		height: var(--min-touch);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -166,16 +190,19 @@
 	}
 	.exit-button svg {
 		display: block;
+		width: 16px;
+		height: 16px;
+		flex-shrink: 0;
 		opacity: 0.8;
 	}
 	.exit-button:hover svg {
 		opacity: 1;
 	}
 	.exit-button:hover {
-		background: rgba(255, 255, 255, 0.08);
+		background: var(--surface-hover-light);
 	}
 	.cravings-shell.craving-route {
-		background: #fff;
+		background: var(--color-surface-paper);
 	}
 	.cravings-shell {
 		position: relative;
@@ -185,17 +212,8 @@
 		min-height: 100vh;
 		max-height: 100dvh;
 		/* No overflow: hidden so Reflect tree/horizon (sibling of main) can span full width */
-		/* Deep night sky: darkest at top, lighter toward horizon, hint of purple */
-		background: linear-gradient(
-			180deg,
-			#010810 0%,
-			#010d18 18%,
-			#011528 35%,
-			#011a2e 50%,
-			#011F3B 68%,
-			#0a1828 85%,
-			#0d1524 100%
-		);
+		/* Deep night sky — see design-tokens.css */
+		background: var(--gradient-sky-app);
 		/* Space for progress pill + safe area */
 		padding-bottom: calc(4rem + 1rem + env(safe-area-inset-bottom, 0px));
 	}
@@ -231,7 +249,7 @@
 			40% 52%, 45% 47%, 50% 51%, 55% 49%, 60% 53%, 65% 48%, 70% 52%, 75% 50%, 80% 54%,
 			85% 49%, 90% 53%, 95% 51%, 100% 55%, 100% 100%
 		);
-		background: linear-gradient(to top, #031a20 0%, #041e24 22%, #052228 45%, #051D26 70%, #041b22 100%);
+		background: var(--gradient-horizon-land);
 	}
 	.reflect-bg-layer .reflect-bg-grass {
 		position: absolute;
@@ -270,7 +288,7 @@
 		bottom: 0;
 		height: 34vh;
 		z-index: 1;
-		background: linear-gradient(to top, rgba(0, 55, 60, 0.55) 0%, rgba(0, 70, 72, 0.25) 30%, rgba(0, 50, 55, 0.08) 55%, transparent 85%);
+		background: var(--gradient-horizon-glow);
 	}
 	.reflect-bg-layer .reflect-bg-silhouette {
 		position: absolute;
@@ -280,7 +298,7 @@
 		height: 36vh;
 		min-height: 130px;
 		z-index: 2;
-		background: #041210;
+		background: var(--color-silhouette-base);
 	}
 	.reflect-bg-layer .reflect-bg-silhouette-svg {
 		width: 100%;
@@ -308,13 +326,7 @@
 		inset: 0;
 		z-index: 0;
 		pointer-events: none;
-		/* Subtle milky way band: diagonal brighter streak */
-		background: radial-gradient(
-			ellipse 120% 40% at 55% 25%,
-			rgba(255, 255, 255, 0.035) 0%,
-			rgba(255, 255, 255, 0.012) 40%,
-			transparent 70%
-		);
+		background: var(--gradient-milky-band);
 	}
 	.stars {
 		position: fixed;
@@ -366,6 +378,16 @@
 	.shooting-star.run .shooting-star-streak {
 		animation: shooting-star 0.5s ease-out forwards;
 	}
+	/*
+	 * Insights / Me: main + fixed overlay sit at z-index 1; default star layers are z-index 0
+	 * so they were fully hidden. Lift stars above main but below exit (99) and bottom bar (100).
+	 * pointer-events: none is already set on these layers.
+	 */
+	.cravings-shell.shell-stars-above-main .milky-band,
+	.cravings-shell.shell-stars-above-main .stars,
+	.cravings-shell.shell-stars-above-main .shooting-star {
+		z-index: 50;
+	}
 	@keyframes shooting-star {
 		0% {
 			opacity: 0;
@@ -409,9 +431,17 @@
 		min-height: 100%;
 		overflow: hidden;
 	}
+	.page-transition-sky-fill {
+		position: absolute;
+		inset: 0;
+		z-index: 0;
+		pointer-events: none;
+		background: var(--gradient-sky-app);
+	}
 	.page-transition-wrap {
 		position: absolute;
 		inset: 0;
+		z-index: 1;
 		width: 100%;
 		min-height: 100%;
 		overflow-y: auto;
@@ -438,6 +468,7 @@
 		}
 		.page-transition-wrap {
 			position: relative;
+			z-index: 1;
 			min-height: 0;
 			overflow-y: visible;
 		}
