@@ -285,8 +285,9 @@
 	}
 
 	/*
-	 * Mobile: html/body stay overflow:hidden (app routes). Landing is taller than
-	 * the viewport — lock shell to 100dvh so this element becomes the scroll root.
+	 * Mobile: html/body stay overflow:hidden (app routes). Shell is the scroll root.
+	 * IMPORTANT: main must NOT use flex:1 here — that caps main at 100dvh and clips
+	 * long marketing + footer. Let main grow with content; min-height keeps short pages tall.
 	 */
 	@media (max-width: 767px) {
 		.auth-shell {
@@ -294,6 +295,35 @@
 			max-height: 100dvh;
 			-webkit-overflow-scrolling: touch;
 			overscroll-behavior-y: contain;
+			scroll-padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+		}
+		.auth-content {
+			flex: none;
+			width: 100%;
+			min-height: 100dvh;
+			min-height: 100vh;
+			z-index: 10;
+			isolation: isolate;
+		}
+		.auth-site-footer {
+			position: relative;
+			z-index: 1;
+			margin-top: auto;
+			padding-top: 1.5rem;
+			padding-bottom: max(1.25rem, calc(1rem + env(safe-area-inset-bottom, 0px)));
+			padding-inline: 0.75rem;
+			/* Legible over fixed bottom silhouette / grass */
+			background: linear-gradient(
+				180deg,
+				rgba(1, 8, 16, 0) 0%,
+				rgba(1, 8, 16, 0.5) 28%,
+				rgba(1, 8, 16, 0.88) 100%
+			);
+			border-radius: 0.85rem 0.85rem 0 0;
+		}
+		.auth-site-footer__tagline,
+		.auth-site-footer__legal {
+			text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 		}
 	}
 	.auth-milky {
@@ -485,13 +515,9 @@
 		margin: 0 auto;
 		padding: 0 0.5rem;
 		max-width: 100%;
-		white-space: nowrap;
-		overflow-x: auto;
-		overflow-y: hidden;
 		font-size: clamp(0.6875rem, 2.15vw, 0.875rem);
 		line-height: 1.35;
 		color: rgba(255, 255, 255, 0.85);
-		-webkit-overflow-scrolling: touch;
 	}
 	.auth-site-footer__legal {
 		margin: 0;
@@ -745,7 +771,7 @@
 		display: block;
 	}
 	.mission-quote {
-		max-width: min(48ch, calc(100vw - 2rem));
+		max-width: min(48ch, 100%);
 		margin: 0.4rem auto 0;
 		text-align: center;
 		font-family: 'Noto Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -753,6 +779,8 @@
 		font-weight: 700;
 		line-height: 1.25;
 		color: #fff;
+		overflow-wrap: break-word;
+		hyphens: auto;
 	}
 	.mission-emphasis {
 		color: #fff;
@@ -771,8 +799,10 @@
 		margin-bottom: 2rem;
 	}
 	.feature-section {
-		width: min(880px, calc(100% - 96px));
+		width: 100%;
+		max-width: 880px;
 		margin: 0 auto;
+		box-sizing: border-box;
 	}
 	.value-section {
 		width: 100%;
@@ -782,19 +812,24 @@
 		text-align: center;
 	}
 	.value-section__inner {
-		width: min(720px, calc(100% - 96px));
-		margin: 0;
+		width: 100%;
+		max-width: 720px;
+		margin: 0 auto;
 		text-align: left;
+		box-sizing: border-box;
 	}
 	.value-section__inner h2 {
 		text-align: center;
-		max-width: none;
-		white-space: nowrap;
+		max-width: 100%;
 		margin-left: auto;
 		margin-right: auto;
 		margin-bottom: 2rem;
 		font-size: clamp(1.7rem, 3.2vw, 2.4rem);
 		line-height: 1.2;
+		/* Wrap on narrow viewports (nowrap caused overflow on mobile) */
+		white-space: normal;
+		overflow-wrap: break-word;
+		hyphens: auto;
 	}
 	.feature-list {
 		display: grid;
@@ -933,24 +968,98 @@
 		line-height: 1.4;
 	}
 	@media (max-width: 680px) {
+		.hero {
+			min-height: unset;
+			align-items: flex-start;
+			padding-top: 0.5rem;
+		}
 		.hero-grid {
 			grid-template-columns: 1fr;
-			gap: 2rem;
+			gap: 1.5rem;
 			width: 100%;
+			margin: 0;
+		}
+		.hero h1 {
+			max-width: none;
+			font-size: clamp(1.6rem, 6.8vw + 0.35rem, 2.35rem);
+			line-height: 1.18;
+			overflow-wrap: break-word;
+			hyphens: auto;
+		}
+		.hero-subtitle {
+			max-width: none;
+			font-size: clamp(0.9375rem, 3.8vw, 1.0625rem);
 		}
 		.hero-visual-col {
 			justify-content: center;
 			width: 100%;
 			max-width: 100%;
 		}
+		/* 20% narrower than full column: centered */
 		.phone-mockup {
+			width: 80%;
+			max-width: 80%;
+			margin-left: auto;
+			margin-right: auto;
+		}
+		.mission-quote {
+			font-size: clamp(1.1rem, 4.8vw, 1.85rem);
+			padding-inline: 0;
+		}
+		.feature-section h2 {
+			font-size: clamp(1.3rem, 5.2vw, 1.95rem);
+			line-height: 1.22;
+			margin-bottom: 1.35rem;
+			overflow-wrap: break-word;
+		}
+		.value-section__inner h2 {
+			font-size: clamp(1.3rem, 5.2vw, 1.95rem);
+			line-height: 1.22;
+			margin-bottom: 1.35rem;
+		}
+		.feature-item {
+			min-height: unset;
+			padding: 1rem 0.95rem;
+		}
+		.feature-item h3 {
+			font-size: 1.02rem;
+			line-height: 1.3;
+		}
+		.feature-label {
+			font-size: clamp(0.8rem, 2.8vw, 0.95rem);
+		}
+		.feature-item p {
+			font-size: 0.9375rem;
+			line-height: 1.5;
+		}
+		.value-section ul {
 			width: 100%;
 			max-width: 100%;
+		}
+		.value-section li {
+			font-size: 0.9rem;
 		}
 		.feature-list {
 			grid-template-columns: 1fr;
 		}
+		.mission-card + .feature-section,
+		.feature-section + .value-section {
+			margin-top: clamp(3rem, 14vw, 5rem);
+		}
+		.hero + .mission-card {
+			margin-top: clamp(2rem, 8vw, 3.5rem);
+		}
+		.auth-page-body > .value-section {
+			margin-bottom: clamp(4rem, 18vw, 8rem);
+		}
 	}
+	/* Wide enough for long value headline on one line */
+	@media (min-width: 900px) {
+		.value-section__inner h2 {
+			white-space: nowrap;
+		}
+	}
+
 	@media (min-width: 740px) {
 		.auth-content {
 			max-width: none;
