@@ -432,7 +432,8 @@
 		.value-section li {
 			font-size: 0.9rem;
 		}
-		.feature-list {
+		/* Beat later `.feature-list { repeat(2, …) }` — one card per row on phones */
+		.feature-section .feature-list {
 			grid-template-columns: 1fr;
 		}
 	}

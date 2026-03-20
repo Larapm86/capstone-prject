@@ -225,8 +225,13 @@
 	}
 	.insights-grid {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
+		grid-template-columns: 1fr;
 		gap: 0.75rem;
+	}
+	@media (min-width: 768px) {
+		.insights-grid {
+			grid-template-columns: 1fr 1fr;
+		}
 	}
 	.insight-card {
 		/* Same frosted surface as Reflect pill, without 3D lip */
