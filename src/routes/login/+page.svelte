@@ -283,6 +283,19 @@
 		overflow-x: hidden;
 		background: var(--gradient-sky-app);
 	}
+
+	/*
+	 * Mobile: html/body stay overflow:hidden (app routes). Landing is taller than
+	 * the viewport — lock shell to 100dvh so this element becomes the scroll root.
+	 */
+	@media (max-width: 767px) {
+		.auth-shell {
+			height: 100dvh;
+			max-height: 100dvh;
+			-webkit-overflow-scrolling: touch;
+			overscroll-behavior-y: contain;
+		}
+	}
 	.auth-milky {
 		position: fixed;
 		inset: 0;
@@ -927,9 +940,12 @@
 		}
 		.hero-visual-col {
 			justify-content: center;
+			width: 100%;
+			max-width: 100%;
 		}
 		.phone-mockup {
-			width: min(190px, 58vw);
+			width: 100%;
+			max-width: 100%;
 		}
 		.feature-list {
 			grid-template-columns: 1fr;

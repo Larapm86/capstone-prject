@@ -278,7 +278,17 @@
 		min-height: 100vh;
 		min-height: 100dvh;
 		overflow-x: hidden;
+		overflow-y: auto;
 		background: var(--gradient-sky-app);
+	}
+
+	@media (max-width: 767px) {
+		.welcome-shell {
+			height: 100dvh;
+			max-height: 100dvh;
+			-webkit-overflow-scrolling: touch;
+			overscroll-behavior-y: contain;
+		}
 	}
 
 	.welcome-milky {
