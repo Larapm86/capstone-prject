@@ -357,7 +357,8 @@
 			grid-template-rows: auto auto;
 			align-items: center;
 			justify-items: stretch;
-			gap: clamp(1.75rem, 5vw, 2.5rem);
+			/* 3× former gap between copy+CTA row and phone */
+			gap: clamp(5.25rem, 15vw, 7.5rem);
 			width: 100%;
 			max-width: 100%;
 			margin: 0;
@@ -367,11 +368,15 @@
 			font-size: clamp(1.6rem, 6.8vw + 0.35rem, 2.35rem);
 			line-height: 1.18;
 			overflow-wrap: break-word;
-			hyphens: auto;
+			word-break: normal;
+			hyphens: none;
 		}
 		.hero-subtitle {
 			max-width: none;
 			font-size: clamp(0.9375rem, 3.8vw, 1.0625rem);
+			overflow-wrap: break-word;
+			word-break: normal;
+			hyphens: none;
 		}
 		.hero .hero-visual-col {
 			justify-content: center;
@@ -394,11 +399,16 @@
 			line-height: 1.22;
 			margin-bottom: 1.35rem;
 			overflow-wrap: break-word;
+			word-break: normal;
+			hyphens: none;
 		}
 		.value-section__inner h2 {
 			font-size: clamp(1.3rem, 5.2vw, 1.95rem);
 			line-height: 1.22;
 			margin-bottom: 1.35rem;
+			overflow-wrap: break-word;
+			word-break: normal;
+			hyphens: none;
 		}
 		.feature-item {
 			min-height: unset;
@@ -794,6 +804,9 @@
 		line-height: 1.15;
 		max-width: 22ch;
 		color: #fff;
+		overflow-wrap: break-word;
+		word-break: normal;
+		hyphens: none;
 	}
 	.hero-subtitle {
 		margin: 0.65rem 0 0;
@@ -802,6 +815,9 @@
 		line-height: 1.5;
 		font-weight: 500;
 		color: rgba(255, 255, 255, 0.88);
+		overflow-wrap: break-word;
+		word-break: normal;
+		hyphens: none;
 	}
 	/* Same CTA as value section; hero column is left-aligned (not centered). */
 	.hero-copy-col .value-cta {
@@ -889,7 +905,8 @@
 		line-height: 1.25;
 		color: #fff;
 		overflow-wrap: break-word;
-		hyphens: auto;
+		word-break: normal;
+		hyphens: none;
 	}
 	.mission-emphasis {
 		color: #fff;
@@ -906,6 +923,9 @@
 		font-size: clamp(1.7rem, 3.2vw, 2.4rem);
 		line-height: 1.2;
 		margin-bottom: 2rem;
+		overflow-wrap: break-word;
+		word-break: normal;
+		hyphens: none;
 	}
 	.feature-section {
 		width: 100%;
@@ -941,7 +961,8 @@
 		/* Wrap on narrow viewports (nowrap caused overflow on mobile) */
 		white-space: normal;
 		overflow-wrap: break-word;
-		hyphens: auto;
+		word-break: normal;
+		hyphens: none;
 	}
 	.feature-list {
 		display: grid;
@@ -1084,13 +1105,6 @@
 		font-size: 0.875rem;
 		line-height: 1.4;
 	}
-	/* Wide enough for long value headline on one line */
-	@media (min-width: 900px) {
-		.value-section__inner h2 {
-			white-space: nowrap;
-		}
-	}
-
 	@media (min-width: 740px) {
 		.auth-content {
 			max-width: none;

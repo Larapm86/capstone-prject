@@ -452,6 +452,9 @@
 		line-height: 1.4;
 		color: #ffffff;
 		font-family: var(--font-sans);
+		overflow-wrap: break-word;
+		word-break: normal;
+		hyphens: none;
 	}
 
 	.welcome-main {
@@ -713,6 +716,10 @@
 	.welcome-option {
 		width: 100%;
 		text-align: left;
+		white-space: normal;
+		overflow-wrap: break-word;
+		word-break: normal;
+		hyphens: none;
 		padding: 0.75rem 1rem;
 		border-radius: var(--radius-sm);
 		border: 1px solid var(--glass-on-sky-border);

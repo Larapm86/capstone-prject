@@ -37,6 +37,10 @@ body {
 	font-weight: 300;
 	background: var(--bg);
 	color: var(--text);
+	/* Prefer whole words on the next line; avoid “crav-ings” style breaks */
+	overflow-wrap: break-word;
+	word-break: normal;
+	hyphens: none;
 }
 
 @media (min-width: 768px) {
