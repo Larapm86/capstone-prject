@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { base } from '$app/paths';
 	import { enhance } from '$app/forms';
 	import { stars } from '$lib/starsData';
 	import type { ActionData } from './$types';
@@ -41,7 +42,7 @@
 	];
 
 	/** Hero phone mockup — PNG intrinsic size drives frame aspect ratio */
-	const PHONE_PREVIEW = { src: '/assets/becom-home-screen.png', w: 473, h: 1024 } as const;
+	const PHONE_PREVIEW = { src: '/assets/becom-phone-story.png', w: 473, h: 1024 } as const;
 
 	const copyrightYear = new Date().getFullYear();
 
@@ -85,7 +86,7 @@
 
 	<main class="app-page auth-content" class:auth-content--auth-focus={authOpen}>
 		<nav class="auth-top-nav" aria-label="Authentication navigation">
-			<a href="/" class="auth-top-nav__brand" aria-label="Go to home">
+			<a href="{base}/" class="auth-top-nav__brand" aria-label="Go to home">
 				<img src="/logo.svg" alt="Becom" width="106" height="48" />
 			</a>
 			<div class="auth-top-nav__actions">
@@ -198,7 +199,6 @@
 						class="phone-mockup"
 						style="--phone-preview-ar: {PHONE_PREVIEW.w} / {PHONE_PREVIEW.h}"
 					>
-						<div class="phone-notch"></div>
 						<div class="phone-screen">
 							<img
 								class="phone-screen-image"
@@ -299,16 +299,21 @@
 		}
 		.auth-content {
 			flex: none;
+			display: flex;
+			flex-direction: column;
 			width: 100%;
 			min-height: 100dvh;
 			min-height: 100vh;
 			z-index: 10;
 			isolation: isolate;
 		}
+		/* Pull hero down 64px; shift following blocks up 64px (net tighter stack) */
+		.auth-content:not(.auth-content--auth-focus) .auth-page-body {
+			padding-top: 64px;
+		}
 		.auth-site-footer {
 			position: relative;
 			z-index: 1;
-			margin-top: auto;
 			padding-top: 1.5rem;
 			padding-bottom: max(1.25rem, calc(1rem + env(safe-area-inset-bottom, 0px)));
 			padding-inline: 0.75rem;
@@ -324,6 +329,99 @@
 		.auth-site-footer__tagline,
 		.auth-site-footer__legal {
 			text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+		}
+
+		/* 250px between each marketing section (adjacency pulled up 64px: 314 − 64) */
+		.hero + .mission-card {
+			margin-top: -64px;
+		}
+		.mission-card + .feature-section,
+		.feature-section + .value-section {
+			margin-top: -64px;
+		}
+		.hero {
+			margin-bottom: 314px;
+			min-height: unset;
+			align-items: flex-start;
+			padding-top: 0.5rem;
+		}
+		.mission-card {
+			margin-bottom: 314px;
+		}
+		.feature-section {
+			margin-bottom: 314px;
+		}
+		.auth-page-body > .value-section {
+			margin-bottom: 314px;
+		}
+		/* 40px between hero copy (incl. CTA) and phone mockup */
+		.hero-grid {
+			grid-template-columns: 1fr;
+			gap: 40px;
+			width: 100%;
+			margin: 0;
+		}
+		.hero h1 {
+			max-width: none;
+			font-size: clamp(1.6rem, 6.8vw + 0.35rem, 2.35rem);
+			line-height: 1.18;
+			overflow-wrap: break-word;
+			hyphens: auto;
+		}
+		.hero-subtitle {
+			max-width: none;
+			font-size: clamp(0.9375rem, 3.8vw, 1.0625rem);
+		}
+		.hero-visual-col {
+			justify-content: center;
+			width: 100%;
+			max-width: 100%;
+		}
+		.phone-mockup {
+			width: 80%;
+			max-width: 80%;
+			margin-left: auto;
+			margin-right: auto;
+		}
+		.mission-quote {
+			font-size: clamp(1.1rem, 4.8vw, 1.85rem);
+			padding-inline: 0;
+		}
+		.feature-section h2 {
+			font-size: clamp(1.3rem, 5.2vw, 1.95rem);
+			line-height: 1.22;
+			margin-bottom: 1.35rem;
+			overflow-wrap: break-word;
+		}
+		.value-section__inner h2 {
+			font-size: clamp(1.3rem, 5.2vw, 1.95rem);
+			line-height: 1.22;
+			margin-bottom: 1.35rem;
+		}
+		.feature-item {
+			min-height: unset;
+			padding: 1rem 0.95rem;
+		}
+		.feature-item h3 {
+			font-size: 1.02rem;
+			line-height: 1.3;
+		}
+		.feature-label {
+			font-size: clamp(0.8rem, 2.8vw, 0.95rem);
+		}
+		.feature-item p {
+			font-size: 0.9375rem;
+			line-height: 1.5;
+		}
+		.value-section ul {
+			width: 100%;
+			max-width: 100%;
+		}
+		.value-section li {
+			font-size: 0.9rem;
+		}
+		.feature-list {
+			grid-template-columns: 1fr;
 		}
 	}
 	.auth-milky {
@@ -500,6 +598,20 @@
 		display: flex;
 		flex-direction: column;
 	}
+	/* Marketing: body is only as tall as content; footer fills rest of min-height main */
+	.auth-content:not(.auth-content--auth-focus) .auth-page-body {
+		flex: 0 0 auto;
+	}
+	/* Sign-in/up: body grows so the card can center vertically */
+	.auth-content.auth-content--auth-focus .auth-page-body {
+		flex: 1 1 auto;
+		min-height: 0;
+	}
+	/* Pin tagline + copyright to the bottom when the column is shorter than the viewport */
+	.auth-content > .auth-site-footer {
+		margin-top: auto;
+		flex-shrink: 0;
+	}
 	.auth-site-footer {
 		flex-shrink: 0;
 		width: 100%;
@@ -657,14 +769,16 @@
 		padding: 1.15rem 0 0.65rem;
 		min-height: calc(100dvh - 96px);
 		display: flex;
-		align-items: center;
+		/* Top-align copy with phone; mobile (≤767px) also uses flex-start */
+		align-items: flex-start;
 		justify-content: center;
 	}
 	.hero-grid {
 		display: grid;
 		grid-template-columns: minmax(320px, 520px) max-content;
 		gap: clamp(1.25rem, 4vw, 2.5rem);
-		align-items: center;
+		/* Match phone mockup top edge on desktop */
+		align-items: start;
 		width: fit-content;
 		max-width: 100%;
 		margin: 0 auto;
@@ -709,13 +823,6 @@
 		display: flex;
 		flex-direction: column;
 		box-sizing: border-box;
-	}
-	.phone-notch {
-		width: 34%;
-		height: 11px;
-		margin: 0 auto 4px;
-		border-radius: 999px;
-		background: rgba(0, 0, 0, 0.82);
 	}
 	.phone-screen {
 		position: relative;
@@ -801,7 +908,10 @@
 	.feature-section {
 		width: 100%;
 		max-width: 880px;
-		margin: 0 auto;
+		/* Use inline margins only — `margin: 0 auto` was resetting mobile `margin-bottom: 314px` */
+		margin-left: auto;
+		margin-right: auto;
+		margin-top: 0;
 		box-sizing: border-box;
 	}
 	.value-section {
@@ -900,16 +1010,21 @@
 		padding: 0.78rem 1.25rem;
 		font-size: 0.98rem;
 	}
-	.mission-card + .feature-section,
-	.feature-section + .value-section {
-		margin-top: 350px;
-	}
-	.hero + .mission-card {
-		margin-top: clamp(4rem, 12vh, 7rem);
-	}
-	/* Space above global footer after last marketing block */
-	.auth-page-body > .value-section {
-		margin-bottom: 200px;
+	/* Desktop / tablet section rhythm — 250px gaps (314 − 64 aligns with 64px body padding) */
+	@media (min-width: 768px) {
+		.auth-content:not(.auth-content--auth-focus) .auth-page-body {
+			padding-top: 64px;
+		}
+		.mission-card + .feature-section,
+		.feature-section + .value-section {
+			margin-top: calc(314px - 64px);
+		}
+		.hero + .mission-card {
+			margin-top: calc(314px - 64px);
+		}
+		.auth-page-body > .value-section {
+			margin-bottom: 250px;
+		}
 	}
 	.auth-content form {
 		width: 100%;
@@ -966,92 +1081,6 @@
 		margin-top: 0.5rem;
 		font-size: 0.875rem;
 		line-height: 1.4;
-	}
-	@media (max-width: 680px) {
-		.hero {
-			min-height: unset;
-			align-items: flex-start;
-			padding-top: 0.5rem;
-		}
-		.hero-grid {
-			grid-template-columns: 1fr;
-			gap: 1.5rem;
-			width: 100%;
-			margin: 0;
-		}
-		.hero h1 {
-			max-width: none;
-			font-size: clamp(1.6rem, 6.8vw + 0.35rem, 2.35rem);
-			line-height: 1.18;
-			overflow-wrap: break-word;
-			hyphens: auto;
-		}
-		.hero-subtitle {
-			max-width: none;
-			font-size: clamp(0.9375rem, 3.8vw, 1.0625rem);
-		}
-		.hero-visual-col {
-			justify-content: center;
-			width: 100%;
-			max-width: 100%;
-		}
-		/* 20% narrower than full column: centered */
-		.phone-mockup {
-			width: 80%;
-			max-width: 80%;
-			margin-left: auto;
-			margin-right: auto;
-		}
-		.mission-quote {
-			font-size: clamp(1.1rem, 4.8vw, 1.85rem);
-			padding-inline: 0;
-		}
-		.feature-section h2 {
-			font-size: clamp(1.3rem, 5.2vw, 1.95rem);
-			line-height: 1.22;
-			margin-bottom: 1.35rem;
-			overflow-wrap: break-word;
-		}
-		.value-section__inner h2 {
-			font-size: clamp(1.3rem, 5.2vw, 1.95rem);
-			line-height: 1.22;
-			margin-bottom: 1.35rem;
-		}
-		.feature-item {
-			min-height: unset;
-			padding: 1rem 0.95rem;
-		}
-		.feature-item h3 {
-			font-size: 1.02rem;
-			line-height: 1.3;
-		}
-		.feature-label {
-			font-size: clamp(0.8rem, 2.8vw, 0.95rem);
-		}
-		.feature-item p {
-			font-size: 0.9375rem;
-			line-height: 1.5;
-		}
-		.value-section ul {
-			width: 100%;
-			max-width: 100%;
-		}
-		.value-section li {
-			font-size: 0.9rem;
-		}
-		.feature-list {
-			grid-template-columns: 1fr;
-		}
-		.mission-card + .feature-section,
-		.feature-section + .value-section {
-			margin-top: clamp(3rem, 14vw, 5rem);
-		}
-		.hero + .mission-card {
-			margin-top: clamp(2rem, 8vw, 3.5rem);
-		}
-		.auth-page-body > .value-section {
-			margin-bottom: clamp(4rem, 18vw, 8rem);
-		}
 	}
 	/* Wide enough for long value headline on one line */
 	@media (min-width: 900px) {

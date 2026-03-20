@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { base } from '$app/paths';
 	import { get } from 'svelte/store';
 	import { page } from '$app/stores';
 	import { goto, invalidateAll } from '$app/navigation';
@@ -82,7 +83,7 @@
 
 <div class="craving-page craving-page--enter">
 	<header class="app-nav-chrome craving-page__chrome" aria-label="Page tools">
-		<a href="/" class="close-link" aria-label="Back to Reflect">×</a>
+		<a href="{base}/" class="close-link" aria-label="Back to Reflect">×</a>
 	</header>
 	<div class="craving-content">
 		<CravingForm

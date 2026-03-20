@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { base } from '$app/paths';
 	import { afterNavigate, beforeNavigate } from '$app/navigation';
 	import { get } from 'svelte/store';
 	import { page } from '$app/stores';
@@ -90,6 +91,9 @@
 >
 	{#if $page.url.pathname !== '/craving' && $page.url.pathname !== '/stats' && $page.url.pathname !== '/settings' && !($page.url.pathname === '/' && $reflectHoldState?.phase === 'complete')}
 		<header class="app-nav-chrome shell-top-chrome" aria-label="Account">
+			<a href="{base}/" class="shell-top-home" aria-label="Go to home">
+				<img src="/logo.svg" alt="Becom" width="106" height="48" />
+			</a>
 			<form method="POST" action="/sign-out" class="exit-button-form">
 				<button type="submit" class="exit-button" aria-label="Sign out">
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -208,10 +212,33 @@
 	.shell-top-chrome {
 		position: relative;
 		z-index: 99;
-		justify-content: flex-end;
+		justify-content: space-between;
 		padding-left: calc(1rem + env(safe-area-inset-left, 0px));
 		padding-right: calc(1rem + env(safe-area-inset-right, 0px));
 		pointer-events: none;
+	}
+	.shell-top-home {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: var(--min-touch, 44px);
+		min-height: var(--min-touch, 44px);
+		margin: -0.25rem 0;
+		padding: 0.25rem;
+		text-decoration: none;
+		color: inherit;
+		border-radius: 0.5rem;
+		pointer-events: auto;
+		-webkit-tap-highlight-color: transparent;
+	}
+	.shell-top-home:focus-visible {
+		outline: 2px solid var(--focus-ring, currentColor);
+		outline-offset: 2px;
+	}
+	.shell-top-home img {
+		display: block;
+		height: clamp(28px, 5vw, 36px);
+		width: auto;
 	}
 	.shell-top-chrome .exit-button-form {
 		pointer-events: auto;

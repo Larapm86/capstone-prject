@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { base } from '$app/paths';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { stars } from '$lib/starsData';
@@ -125,7 +126,7 @@
 		>
 			<div class="welcome-splash">
 				<div class="welcome-splash-logo-wrap">
-					<a href="/" class="welcome-splash-brand" aria-label="Go to home">
+					<a href="{base}/" class="welcome-splash-brand" aria-label="Go to home">
 						<img src="/logo.svg" alt="" class="welcome-splash-logo" width="174" height="79" />
 					</a>
 				</div>
@@ -134,7 +135,7 @@
 	{:else}
 		<div class="welcome-onboard-shell">
 			<nav class="auth-top-nav auth-top-nav--onboarding" aria-label="Site">
-				<a href="/" class="auth-top-nav__brand" aria-label="Go to home">
+				<a href="{base}/" class="auth-top-nav__brand" aria-label="Go to home">
 					<img src="/logo.svg" alt="Becom" width="106" height="48" />
 				</a>
 			</nav>

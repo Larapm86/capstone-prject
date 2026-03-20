@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { base } from '$app/paths';
 	import { onMount } from 'svelte';
 	import CravingReflectionCard from '$lib/components/stats/CravingReflectionCard.svelte';
 	import { hasNewCravingForStats } from '$lib/stores/newCraving';
@@ -34,7 +35,7 @@
 
 <div class="overlay-screen">
 	<header class="app-nav-chrome overlay-screen__chrome" aria-label="Page tools">
-		<a href="/" class="overlay-back" aria-label="Back to Reflect">
+		<a href="{base}/" class="overlay-back" aria-label="Back to Reflect">
 			<svg class="overlay-back-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 				<path d="M19 12H5M12 19l-7-7 7-7"/>
 			</svg>
