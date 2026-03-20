@@ -317,21 +317,14 @@
 			padding-top: 1.5rem;
 			padding-bottom: max(1.25rem, calc(1rem + env(safe-area-inset-bottom, 0px)));
 			padding-inline: 0.75rem;
-			/* Legible over fixed bottom silhouette / grass */
-			background: linear-gradient(
-				180deg,
-				rgba(1, 8, 16, 0) 0%,
-				rgba(1, 8, 16, 0.5) 28%,
-				rgba(1, 8, 16, 0.88) 100%
-			);
-			border-radius: 0.85rem 0.85rem 0 0;
+			background: transparent;
 		}
 		.auth-site-footer__tagline,
 		.auth-site-footer__legal {
 			text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 		}
 
-		/* 250px between each marketing section (adjacency pulled up 64px: 314 − 64) */
+		/* Marketing sections: 250px net (314 − 64 pull), except hero→mission on mobile = half (~125px net) */
 		.hero + .mission-card {
 			margin-top: -64px;
 		}
@@ -340,7 +333,8 @@
 			margin-top: -64px;
 		}
 		.hero {
-			margin-bottom: 314px;
+			/* 189px bottom + (−64px) on mission = ~125px net — half of former 250px */
+			margin-bottom: 189px;
 			min-height: unset;
 			align-items: flex-start;
 			padding-top: 0.5rem;
@@ -354,11 +348,18 @@
 		.auth-page-body > .value-section {
 			margin-bottom: 314px;
 		}
-		/* 40px between hero copy (incl. CTA) and phone mockup */
-		.hero-grid {
+		/*
+		 * Stack copy then phone; beat later .hero-grid / .hero-visual-col (fit-content)
+		 * so % widths on .phone-mockup don’t collapse.
+		 */
+		.hero .hero-grid {
 			grid-template-columns: 1fr;
-			gap: 40px;
+			grid-template-rows: auto auto;
+			align-items: center;
+			justify-items: stretch;
+			gap: clamp(1.75rem, 5vw, 2.5rem);
 			width: 100%;
+			max-width: 100%;
 			margin: 0;
 		}
 		.hero h1 {
@@ -372,14 +373,15 @@
 			max-width: none;
 			font-size: clamp(0.9375rem, 3.8vw, 1.0625rem);
 		}
-		.hero-visual-col {
+		.hero .hero-visual-col {
 			justify-content: center;
 			width: 100%;
 			max-width: 100%;
+			min-width: 0;
 		}
-		.phone-mockup {
-			width: 80%;
-			max-width: 80%;
+		.hero .phone-mockup {
+			width: min(17.5rem, 88vw);
+			max-width: 100%;
 			margin-left: auto;
 			margin-right: auto;
 		}
@@ -1095,14 +1097,6 @@
 			margin: 0;
 			padding: 16px;
 		}
-		.hero-grid {
-			grid-template-columns: minmax(420px, 640px) max-content;
-			gap: clamp(1.5rem, 4.5vw, 3.25rem);
-		}
-		.hero {
-			min-height: calc(100dvh - 92px);
-			padding-top: 0.5rem;
-		}
 		.hero h1 {
 			max-width: 20ch;
 			font-size: clamp(2.25rem, 4.2vw, 3.1rem);
@@ -1112,6 +1106,18 @@
 			font-size: clamp(1.5rem, 3.2vw, 2.45rem);
 			font-weight: 700;
 			line-height: 1.22;
+		}
+	}
+
+	/* Side-by-side hero only from tablet/desktop — avoids 740–767px squeezing the phone off-screen */
+	@media (min-width: 768px) {
+		.hero-grid {
+			grid-template-columns: minmax(420px, 640px) max-content;
+			gap: clamp(1.5rem, 4.5vw, 3.25rem);
+		}
+		.hero {
+			min-height: calc(100dvh - 92px);
+			padding-top: 0.5rem;
 		}
 		.hero-visual-col {
 			justify-content: flex-start;

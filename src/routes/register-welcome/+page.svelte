@@ -133,7 +133,10 @@
 			</div>
 		</main>
 	{:else}
-		<div class="welcome-onboard-shell">
+		<div
+			class="welcome-onboard-shell"
+			class:welcome-onboard-shell--questions={phase === 'q1' || phase === 'q2'}
+		>
 			<nav class="auth-top-nav auth-top-nav--onboarding" aria-label="Site">
 				<a href="{base}/" class="auth-top-nav__brand" aria-label="Go to home">
 					<img src="/logo.svg" alt="Becom" width="106" height="48" />
@@ -289,6 +292,11 @@
 			max-height: 100dvh;
 			-webkit-overflow-scrolling: touch;
 			overscroll-behavior-y: contain;
+		}
+
+		/* More room for Q1/Q2; footer stays on preparing + desktop */
+		.welcome-onboard-shell--questions .welcome-onboard-footer {
+			display: none;
 		}
 	}
 
