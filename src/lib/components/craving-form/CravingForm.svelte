@@ -353,11 +353,21 @@
 			<button type="button" class="cta-secondary" onclick={back}>Back</button>
 		{/if}
 		{#if isLastStep}
-			<button type="submit" class="cta-primary" disabled={submitting || (currentStep?.stepKey === 'text' && !text.trim())} aria-busy={submitting}>
+			<button
+				type="submit"
+				class="cta-primary cta-3d-primary"
+				disabled={submitting || (currentStep?.stepKey === 'text' && !text.trim())}
+				aria-busy={submitting}
+			>
 				{submitting ? 'Saving…' : submitLabel}
 			</button>
 		{:else}
-			<button type="button" class="cta-primary" disabled={currentStep?.stepKey === 'text' && !text.trim()} onclick={next}>
+			<button
+				type="button"
+				class="cta-primary cta-3d-primary"
+				disabled={currentStep?.stepKey === 'text' && !text.trim()}
+				onclick={next}
+			>
 				Next
 			</button>
 		{/if}
@@ -536,13 +546,8 @@
 		outline: 2px solid var(--color-brand-navy);
 		outline-offset: 2px;
 	}
-	.cta-primary:focus-visible,
 	.cta-secondary:focus-visible {
 		outline: 2px solid var(--color-brand-navy);
-		outline-offset: 2px;
-	}
-	.cta-primary:focus-visible {
-		outline-color: var(--color-surface-paper);
 		outline-offset: 2px;
 	}
 	.slider {
@@ -578,21 +583,7 @@
 	}
 	.cta-primary {
 		flex: 1;
-		min-height: var(--min-touch);
-		padding: 0.75rem 1.5rem;
-		background: var(--color-brand-navy);
-		color: var(--color-text-on-frosted);
-		border: none;
-		border-radius: 0.75rem;
-		font-family: var(--font-sans);
-		font-weight: 600;
-		font-size: 1rem;
-		cursor: pointer;
-		-webkit-tap-highlight-color: transparent;
-	}
-	.cta-primary:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
+		/* Visuals: global `button.cta-3d-primary` */
 	}
 	.cta-secondary {
 		min-height: var(--min-touch);

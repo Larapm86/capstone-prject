@@ -1,7 +1,7 @@
 /** Post–sign-up onboarding (before splash). */
 
 export const REGISTER_Q1 = {
-	title: 'Step 1',
+	title: 'Step 1 of 2',
 	question: 'When a craving hits, what usually happens?',
 	options: [
 		{ id: 'eat-without-thinking', label: 'I eat it without thinking' },
@@ -12,7 +12,7 @@ export const REGISTER_Q1 = {
 } as const;
 
 export const REGISTER_Q2 = {
-	title: 'Step 2',
+	title: 'Step 2 of 2',
 	question: 'What would a healthier relationship with food feel like to you?',
 	options: [
 		{ id: 'free', label: 'Free — not thinking about it all the time' },

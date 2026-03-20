@@ -1,6 +1,17 @@
 @import './styles/design-tokens.css';
 
-/* Becom — minimal mobile-first base, dark mode (tokens in design-tokens.css) */
+/*
+ * Global base styles (Becom)
+ * --------------------------
+ * 1. Reset & document   — box-sizing, html/body, scroll behavior
+ * 2. Typography hooks   — headings, .page-title
+ * 3. Layout shells      — main, .app-nav-chrome, overlay max-width exception
+ * 4. Form controls      — default button/input/label (unstyled buttons get --text fill)
+ * 5. Primary 3D CTA     — .cta-3d-primary (+ --on-dark for focus)
+ *
+ * Route/component-specific CSS stays in `.svelte` files; reuse tokens from
+ * `design-tokens.css` instead of duplicating rgba/hex.
+ */
 
 *,
 *::before,
@@ -106,10 +117,67 @@ input[type="button"] {
 	background: var(--text);
 	color: var(--bg);
 	border: none;
-	border-radius: 0.75rem;
+	border-radius: var(--radius-md);
 	font-family: var(--font-sans);
 	font-weight: 600;
 	cursor: pointer;
+}
+
+/*
+ * Primary 3D CTA — tokens: --cta-3d-*, --duration-press, --focus-ring-*
+ * Markup: button.cta-3d-primary; add .cta-3d-primary--on-dark on sky / frosted.
+ */
+button.cta-3d-primary,
+a.button.cta-3d-primary {
+	margin-bottom: var(--cta-3d-extrude);
+	padding: 0.75rem 1.5rem;
+	background: var(--cta-3d-surface);
+	color: var(--cta-3d-ink);
+	border: none;
+	border-radius: var(--radius-md);
+	font-weight: 600;
+	font-size: 1rem;
+	box-shadow: 0 var(--cta-3d-extrude) 0 var(--cta-3d-shadow);
+	transition:
+		transform var(--duration-press) var(--ease-press),
+		box-shadow var(--duration-press) var(--ease-press),
+		background var(--duration-press) var(--ease-press);
+	-webkit-tap-highlight-color: transparent;
+}
+
+button.cta-3d-primary:hover:not(:disabled),
+a.button.cta-3d-primary:hover:not(:disabled) {
+	background: var(--cta-3d-surface-hover);
+	box-shadow: 0 var(--cta-3d-extrude) 0 var(--cta-3d-shadow-hover);
+}
+
+button.cta-3d-primary:active:not(:disabled),
+a.button.cta-3d-primary:active:not(:disabled) {
+	transform: translateY(var(--cta-3d-extrude));
+	box-shadow: 0 0 0 var(--cta-3d-shadow);
+}
+
+button.cta-3d-primary:focus-visible,
+a.button.cta-3d-primary:focus-visible {
+	outline: var(--focus-ring-width) solid var(--focus-ring-on-light);
+	outline-offset: var(--focus-ring-offset);
+}
+
+button.cta-3d-primary.cta-3d-primary--on-dark:focus-visible,
+a.button.cta-3d-primary.cta-3d-primary--on-dark:focus-visible {
+	outline-color: var(--focus-ring-on-dark);
+}
+
+button.cta-3d-primary:disabled,
+a.button.cta-3d-primary:disabled {
+	opacity: var(--cta-3d-disabled-opacity);
+	cursor: not-allowed;
+	box-shadow: 0 var(--cta-3d-disabled-extrude) 0 var(--cta-3d-disabled-shadow);
+	transform: none;
+}
+
+.form-actions .cta-3d-primary {
+	width: 100%;
 }
 
 input,
@@ -124,7 +192,7 @@ textarea {
 	-webkit-backdrop-filter: blur(8px);
 	color: var(--text);
 	border: 1px solid var(--input-border);
-	border-radius: 0.75rem;
+	border-radius: var(--radius-md);
 	transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 	outline: none;
 }

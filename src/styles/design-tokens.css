@@ -1,6 +1,18 @@
 /**
- * Becom — design tokens (colors, gradients, surfaces, radii, motion).
- * Imported from app.css. Use var(--token-name) in components; prefer semantic names.
+ * Becom — design token system
+ * ============================
+ *
+ * Layers (use the shallowest layer that fits):
+ *
+ * 1. Primitives   — raw palette (--color-sky-*, --color-brand-navy, …)
+ * 2. Semantic     — product meaning (--bg, --text, --color-text-on-paper, …)
+ * 3. Components   — reusable UI atoms (--cta-3d-*, --glass-on-sky-*, --focus-ring-*, …)
+ * 4. Layout       — spacing, type stack, radii (--min-touch, --radius-md, …)
+ *
+ * In Svelte `<style>` blocks: prefer `var(--token)` over hex/rgba copies so
+ * auth, onboarding, and app chrome stay visually aligned when tokens change.
+ *
+ * Imported only from `app.css` (single entry).
  */
 
 :root {
@@ -168,4 +180,47 @@
 	--radius-pill: 9999px;
 
 	--space-metric-gap: 8px;
+
+	/* ── Motion (press / hover micro-interactions) ── */
+	--duration-press: 120ms;
+	--ease-press: ease;
+
+	/* ── Focus rings (keyboard) ── */
+	--focus-ring-width: 2px;
+	--focus-ring-offset: 3px;
+	/* On dark / sky / frosted backgrounds */
+	--focus-ring-on-dark: rgba(255, 255, 255, 0.9);
+	/* On light surfaces (paper, 3D CTA) */
+	--focus-ring-on-light: var(--color-sky-850);
+
+	/*
+	 * ── Primary 3D CTA (main actions: login, onboarding Next, CravingForm)
+	 * One extruded “plate”; depth = solid shadow below (not blur).
+	 */
+	--cta-3d-surface: #dddddd;
+	--cta-3d-surface-hover: #e8e8e8;
+	--cta-3d-ink: var(--color-sky-850);
+	--cta-3d-shadow: #b3b3b3;
+	--cta-3d-shadow-hover: #a6a6a6;
+	--cta-3d-extrude: 5px;
+	--cta-3d-disabled-opacity: 0.55;
+	--cta-3d-disabled-shadow: #c8c8c8;
+	--cta-3d-disabled-extrude: 3px;
+
+	/*
+	 * ── Glass chips on night sky (single-choice rows, preparing checklist)
+	 * Default = idle; hover/selected = stronger fill for affordance.
+	 */
+	--glass-on-sky-border: rgba(255, 255, 255, 0.12);
+	--glass-on-sky-fill: rgba(255, 255, 255, 0.055);
+	--glass-on-sky-border-hover: rgba(255, 255, 255, 0.2);
+	--glass-on-sky-fill-hover: rgba(255, 255, 255, 0.095);
+	--glass-on-sky-border-active: rgba(255, 255, 255, 0.45);
+	--glass-on-sky-fill-active: rgba(255, 255, 255, 0.22);
+	--glass-on-sky-dot-fill: rgba(255, 255, 255, 0.2);
+	--glass-on-sky-dot-ring: rgba(255, 255, 255, 0.12);
+
+	/* Progress ring track on sky (preparing screen) */
+	--ring-on-sky-track: rgba(255, 255, 255, 0.2);
+	--ring-on-sky-progress: rgba(255, 255, 255, 0.95);
 }
